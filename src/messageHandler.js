@@ -667,13 +667,16 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
     // Increment daily message count for free users
     if (ownerId) {
       try {
+        // Ensure ownerId is an integer
+        const ownerIdInt = typeof ownerId === 'string' ? parseInt(ownerId, 10) : ownerId;
+
         const owner = await prisma.adminUser.findUnique({
-          where: { id: ownerId },
+          where: { id: ownerIdInt },
           select: { plan: true }
         });
 
         if (owner && owner.plan === 'free') {
-          await rateLimitService.incrementDailyCount(ownerId);
+          await rateLimitService.incrementDailyCount(ownerIdInt);
         }
       } catch (incrementError) {
         logger.error('Error incrementing daily count:', incrementError.message);
