@@ -1,0 +1,424 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int          @id @default(autoincrement())
+  telegram_id     BigInt       @unique
+  username        String?
+  first_name      String?
+  last_name       String?
+  display_name    String?      // Constructed display name for UI (firstName lastName, or username, or phone)
+  phone           String?
+  telegram_type   String       @default("User") // User, Channel, Chat
+  access_hash     String?      // For Telegram API access
+  owner_user_id   Int?         // AdminUser who owns this contact
+  created_at      DateTime     @default(now())
+  last_seen       DateTime     @updatedAt
+  bot_instance_id String?
+  last_tone       String?
+  messages        Message[]
+  payments        Payment[]
+  media_views     MediaView[]
+
+  @@index([telegram_id])
+  @@index([bot_instance_id])
+  @@index([owner_user_id])
+  @@index([phone])
+}
+
+model Message {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  role            String
+  content         String
+  timestamp       DateTime @default(now())
+  bot_instance_id String?
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([timestamp])
+  @@index([bot_instance_id])
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  name          String
+  description   String?
+  price         Float?
+  type          String   @default("product") // "product" or "service"
+  owner_user_id Int?
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  media MediaContent[]
+
+  @@index([owner_user_id])
+  @@index([is_active])
+  @@index([type])
+}
+
+model MediaContent {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  keywords    String
+  file_path   String
+  file_type   String
+  created_at  DateTime @default(now())
+  is_active   Boolean  @default(true)
+
+  // New fields for bulk media delivery
+  owner_user_id Int?    // Link to AdminUser (null for global content)
+  price         Float?  // Optional price
+  tags          String? // Comma-separated tags: "premium,exclusive,new"
+  priority      Int      @default(0) // Higher = more priority
+  view_count    Int      @default(0) // Track popularity
+  featured      Boolean  @default(false) // Featured content
+  is_new_release Boolean  @default(false) // New release - shown first in product
+  product_id    Int?     // Link to Product
+
+  product Product?  @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@index([keywords])
+  @@index([owner_user_id])
+  @@index([is_active])
+  @@index([featured])
+  @@index([is_new_release])
+  @@index([priority])
+  @@index([product_id])
+
+  views MediaView[]
+}
+
+model BotConfig {
+  id                      Int      @id @default(1)
+  bot_name                String   @default("Shey")
+  bot_location            String   @default("Costa Rica")
+  bot_age                 Int      @default(25)
+  paypal_link             String?
+  sinpe_number            String?
+  products                String   @default("Sexting personalizado,Videollamadas privadas,Packs de fotos/videos, Videos personalizados")
+  personality             String   @default("Caliente, atrevida, sin filtro. Te gusta hablar sucio. Coqueta pero no empalagosa.")
+  response_style          String   @default("short")
+  typing_delay            Boolean  @default(true)
+  typing_speed_min        Int      @default(200)
+  typing_speed_max        Int      @default(400)
+  media_keyword_trigger   Boolean  @default(true)
+  media_response_template String   @default("Aquí tienes {keyword} 💋 ¿te interesa?")
+  updated_at              DateTime @updatedAt
+  admin_password          String   @default("admin123")
+  engagement_level        Int      @default(3)
+  message_style           String   @default("[\"short\",\"casual\"]")
+  payment_confirm_message String?
+  restrictions            String?
+  sales_strategy          String?
+  tone                    String   @default("playful")
+  user_gender_mode        String   @default("auto")
+  ai_generated            Boolean  @default(false)
+  ai_description          String?
+  payment_methods         PaymentMethodConfig[]
+}
+
+// Configurable payment methods with account details
+model PaymentMethodConfig {
+  id                Int      @id @default(autoincrement())
+  method_type       String   // e.g., "paypal", "sinpe", "zelle", etc.
+  account_identifier String  // The account number, email, username, or link
+  is_active         Boolean  @default(true)
+  display_order     Int      @default(0)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  bot_config_id     Int      @default(1)
+  bot_config        BotConfig @relation(fields: [bot_config_id], references: [id], onDelete: Cascade)
+
+  @@index([method_type])
+  @@index([bot_config_id])
+}
+
+model AppSetup {
+  id                Int      @id @default(1)
+  setup_completed   Boolean  @default(false)
+  telegram_api_id   String?
+  telegram_api_hash String?
+  telegram_phone    String?
+  telegram_session  String?
+  ai_provider       String   @default("groq")
+  ai_api_key        String?
+  current_step      String   @default("welcome")
+  updated_at        DateTime @updatedAt
+}
+
+model Payment {
+  id             Int            @id @default(autoincrement())
+  user_id        Int
+  pack_name      String?
+  status         String         @default("pending")
+  created_at     DateTime       @default(now())
+  notes          String?
+  payment_method String         @default("sinpe")
+  verified_at    DateTime?
+  user           User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  proofs         PaymentProof[]
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model PaymentProof {
+  id          Int      @id @default(autoincrement())
+  payment_id  Int
+  file_path   String
+  uploaded_at DateTime @default(now())
+  payment     Payment  @relation(fields: [payment_id], references: [id], onDelete: Cascade)
+
+  @@index([payment_id])
+}
+
+model AdminUser {
+  id                   Int              @id @default(autoincrement())
+  email                String           @unique
+  name                 String?
+  username             String?          @unique
+  picture              String?
+  google_id            String?          @unique
+  password_hash        String?
+  role                 String           @default("admin")
+  onboarding_completed Boolean          @default(false)
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @default(now()) @updatedAt
+  last_login           DateTime?
+  two_factor_enabled   Boolean          @default(false)
+  two_factor_secret    String?
+  stripe_customer_id   String?
+
+  // Plan type - determines API key selection
+  plan                 String           @default("free") // "free" | "premium"
+
+  // User's own API key (for free users) - ENCRYPTED
+  user_api_key         String?          // Encrypted API key
+  user_api_key_iv      String?          // Initialization vector for encryption
+  user_api_provider    String?          @default("groq") // "openai" | "groq"
+
+  // Rate limiting for free users
+  daily_message_count  Int              @default(0)
+  last_reset_date      DateTime?        // Last time counter was reset
+
+  // Usage tracking for premium users (token-based cost control)
+  total_tokens_used    Int              @default(0)
+  monthly_tokens_used  Int              @default(0)
+  token_reset_date     DateTime?        // Monthly token reset
+
+  notifications        Notification[]
+  credentials          UserCredentials?
+  subscription         Subscription?
+  payment_methods      UserPaymentMethod[]
+  sessions             UserSession[]
+  invoices             Invoice[]
+  blocked_users        BlockedUser[]
+  usage_tracking       UsageTracking[]
+
+  @@index([email])
+  @@index([stripe_customer_id])
+  @@index([plan])
+}
+
+// Subscription for billing
+model Subscription {
+  id               Int      @id @default(autoincrement())
+  user_id          Int      @unique
+  plan             String   @default("free") // free, pro, scale
+  status           String   @default("active") // active, cancelled, past_due, trialing
+  stripe_subscription_id String?
+  stripe_price_id  String?
+  current_period_start DateTime?
+  current_period_end   DateTime?
+  cancel_at_period_end Boolean @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  user             AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+}
+
+// Payment methods (cards)
+model UserPaymentMethod {
+  id                 Int      @id @default(autoincrement())
+  user_id            Int
+  stripe_payment_method_id String
+  type               String   // card, sepa_debit, etc.
+  brand              String?  // visa, mastercard, etc.
+  last4              String?
+  exp_month          Int?
+  exp_year           Int?
+  is_default         Boolean  @default(false)
+  created_at         DateTime @default(now())
+  user               AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_default])
+}
+
+// Active sessions for security
+model UserSession {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  token_hash   String   @unique
+  device_info  String?  // User agent
+  ip_address   String?
+  last_active  DateTime @default(now())
+  created_at   DateTime @default(now())
+  expires_at   DateTime
+  user         AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token_hash])
+  @@index([expires_at])
+}
+
+// Billing history / Invoices
+model Invoice {
+  id                    Int      @id @default(autoincrement())
+  user_id               Int
+  stripe_invoice_id      String   @unique
+  amount                Float
+  currency              String   @default("usd")
+  status                String   // paid, open, void, uncollectible
+  invoice_url           String?
+  invoice_pdf           String?
+  description           String?
+  period_start          DateTime
+  period_end            DateTime
+  created_at            DateTime @default(now())
+  user                  AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model UserCredentials {
+  id                Int       @id @default(autoincrement())
+  user_id           Int       @unique
+  telegram_api_id   String?
+  telegram_api_hash String?
+  telegram_phone    String?
+  telegram_session  String?
+  telegram_user_id  String?   // Telegram user ID of the account (to detect account changes)
+  ai_api_key        String?
+  ai_provider       String    @default("groq")
+  bot_active        Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  user              AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  type        String
+  title       String
+  message     String
+  action_url  String?
+  action_text String?
+  is_read     Boolean   @default(false)
+  priority    String    @default("medium")
+  metadata    String?
+  created_at  DateTime  @default(now())
+  read_at     DateTime?
+  expires_at  DateTime?
+  user        AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_read])
+  @@index([created_at])
+}
+
+// AI-generated bot configurations
+model AIConfigGeneration {
+  id              Int      @id @default(autoincrement())
+  user_id         Int?
+  description     String   // Original user description
+  generated_config Json    // AI-generated config object
+  status          String   @default("draft") // draft, applied, discarded
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([status])
+  @@index([created_at])
+}
+
+// Version history for bot configuration changes
+model BotConfigVersion {
+  id          Int      @id @default(autoincrement())
+  config_id   Int      @default(1) // References BotConfig id
+  version     Int
+  config_data Json     // Snapshot of config at this version
+  created_at  DateTime @default(now())
+  created_by  String   @default("user") // "user" or "ai"
+
+  @@index([config_id])
+  @@index([created_at])
+}
+
+// Blocked users - users ignored by the bot
+model BlockedUser {
+  id             Int      @id @default(autoincrement())
+  owner_user_id  Int      // AdminUser who owns this block list
+  telegram_id    BigInt   // Telegram user ID (primary identifier)
+  username       String?  // Telegram username (optional, may change)
+  display_name   String?  // Display name at time of blocking
+  reason         String?  // Optional reason for blocking
+  created_at     DateTime @default(now())
+
+  owner          AdminUser @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
+
+  @@unique([owner_user_id, telegram_id]) // One block per user per owner
+  @@index([owner_user_id])
+  @@index([telegram_id])
+  @@index([owner_user_id, telegram_id]) // Composite for fast lookup
+}
+
+// Track media views for personalization (avoid sending same content repeatedly)
+model MediaView {
+  id             Int      @id @default(autoincrement())
+  user_id        Int      // Telegram user (User table)
+  media_id       Int      // Media content
+  viewed_at      DateTime @default(now())
+  owner_user_id  Int?     // Bot owner (for multi-tenant)
+
+  user           User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  media          MediaContent  @relation(fields: [media_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, media_id]) // One view per user per media
+  @@index([user_id])
+  @@index([media_id])
+  @@index([viewed_at])
+}
+
+// Track usage for cost control and analytics
+model UsageTracking {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  timestamp    DateTime  @default(now())
+  tokens_in    Int       @default(0)
+  tokens_out   Int       @default(0)
+  model        String?
+  api_key_type String    // "user" | "platform"
+  cost_usd     Float?    @default(0)
+
+  user         AdminUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([timestamp])
+  @@index([user_id, timestamp])
+}

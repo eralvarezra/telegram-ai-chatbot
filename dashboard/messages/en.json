@@ -1,0 +1,393 @@
+{
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "enterCredentials": "Enter your credentials to continue",
+    "createAccountTitle": "Create account",
+    "createAccountSubtitle": "Get started with your free account",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "createAccount": "Create Account",
+    "signingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "namePlaceholder": "Enter your name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "continueWithGoogle": "Continue with Google",
+    "orContinueWith": "or continue with",
+    "backToHome": "Back to home",
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email",
+      "passwordRequired": "Password is required",
+      "passwordShort": "Password must be at least 6 characters",
+      "nameRequired": "Name is required",
+      "oauthDenied": "Access denied by Google",
+      "oauthFailed": "Failed to authenticate with Google",
+      "oauthNotConfigured": "Google OAuth is not configured. Contact the administrator.",
+      "noCode": "Authorization code not received"
+    },
+    "enableGoogle": "To enable Google OAuth:",
+    "googleStep1": "Go to Google Cloud Console",
+    "googleStep2": "Create OAuth 2.0 credentials",
+    "googleStep3": "Add the redirect URI to your credentials",
+    "googleStep4": "Add environment variables in .env",
+    "branding": {
+      "headline1": "Automate Conversations.",
+      "headline2": "Increase Revenue.",
+      "subheadline": "Your AI assistant that converts chats into sales 24/7.",
+      "feature1": "AI-powered responses",
+      "feature2": "Tone matching technology",
+      "feature3": "Automated follow-ups",
+      "aiStatus": "AI Assistant Active",
+      "chatUser": "Hey, I'm interested in your premium content!",
+      "chatAI": "Thanks for reaching out! I'd love to help you get started. Let me share the options..."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "clearAll": "Clear all",
+    "empty": "You're all caught up",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "earlier": "Earlier",
+    "delete": "Delete",
+    "types": {
+      "payment": "Payment",
+      "warning": "Warning",
+      "suggestion": "Suggestion",
+      "info": "Info"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "connectBot": "Connect Bot",
+      "configureApi": "Configure API",
+      "setupPayments": "Setup Payments",
+      "reconnect": "Reconnect",
+      "addContent": "Add Content"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "testimonials": "Testimonials",
+    "login": "Login",
+    "startFree": "Start Free"
+  },
+  "hero": {
+    "badge": "AI-Powered Sales Automation",
+    "title": "Turn Conversations Into Revenue",
+    "titleHighlight": "Automatically",
+    "subtitle": "Your AI assistant that handles chats, matches tones, drives sales, and never sleeps. Scale your Telegram business without scaling your workload.",
+    "cta": "Start Free",
+    "ctaSecondary": "Watch Demo",
+    "stats": {
+      "users": "Active Users",
+      "messages": "Messages Sent",
+      "revenue": "Revenue Generated"
+    }
+  },
+  "problem": {
+    "title": "Manual Chats Don't Scale",
+    "subtitle": "Sound familiar?",
+    "problems": [
+      {
+        "title": "Overwhelmed by Messages",
+        "description": "Hundreds of chats flood in daily. You can't respond fast enough, and potential sales slip away."
+      },
+      {
+        "title": "Inconsistent Responses",
+        "description": "Tired replies, missed opportunities, forgotten follow-ups. Your revenue suffers from human limitations."
+      },
+      {
+        "title": "No Time for Growth",
+        "description": "You're stuck in the chat grind. No time to create content, strategize, or scale your business."
+      }
+    ]
+  },
+  "solution": {
+    "title": "Meet Your AI Sales Partner",
+    "subtitle": "Automate conversations. Drive conversions. Scale revenue.",
+    "description": "Our AI doesn't just respond—it sells. It matches your unique tone, remembers every customer, and strategically guides conversations toward purchases.",
+    "features": [
+      "Responds 24/7 instantly",
+      "Matches your unique voice",
+      "Remembers every customer",
+      "Strategically drives sales",
+      "Automated follow-ups"
+    ],
+    "cta": "Get Started Free"
+  },
+  "features": {
+    "title": "Powerful Features",
+    "subtitle": "Everything you need to automate and scale",
+    "items": {
+      "aiConversations": {
+        "title": "AI Conversations",
+        "description": "Natural, engaging conversations that feel human. Your AI learns your style and responds exactly how you would.",
+        "tooltip": "Advanced language models trained on your communication style to maintain authentic conversations"
+      },
+      "smartSales": {
+        "title": "Smart Sales Automation",
+        "description": "Strategically guide conversations toward purchases without being pushy. Know when to offer, when to discount.",
+        "tooltip": "AI analyzes conversation context and timing to optimize sales moments"
+      },
+      "toneMatching": {
+        "title": "Tone Matching",
+        "description": "Flirty? Professional? Casual? The AI adapts to your brand voice and matches the customer's energy.",
+        "tooltip": "Dynamic personality engine that adjusts based on customer behavior and your preferences"
+      },
+      "crmTracking": {
+        "title": "CRM Tracking",
+        "description": "Every customer interaction logged. Know who's interested, who's bought, and who needs follow-up.",
+        "tooltip": "Complete customer profiles with purchase history, preferences, and engagement metrics"
+      },
+      "followUps": {
+        "title": "Automated Follow-ups",
+        "description": "Never lose a lead. Smart reminders and re-engagement messages sent at the perfect time.",
+        "tooltip": "AI-powered timing engine that determines optimal follow-up moments"
+      }
+    }
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "subtitle": "Get started in 3 simple steps",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Connect Your Telegram",
+        "description": "Link your Telegram account securely. We use official Telegram API for safe integration."
+      },
+      {
+        "number": "02",
+        "title": "Train Your AI",
+        "description": "Set your personality, tone, and sales style. The AI learns how you want to communicate."
+      },
+      {
+        "number": "03",
+        "title": "Watch Revenue Grow",
+        "description": "Your AI handles chats 24/7 while you focus on content, strategy, or just relax."
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "Loved by Creators",
+    "subtitle": "See what our users are saying",
+    "items": [
+      {
+        "quote": "I went from spending 6 hours a day on chats to just 30 minutes. My revenue actually increased because the AI is better at closing than I was!",
+        "author": "Sofia M.",
+        "role": "Content Creator",
+        "revenue": "3x Revenue Increase"
+      },
+      {
+        "quote": "The tone matching is incredible. Customers can't tell they're talking to an AI. My satisfaction scores went up.",
+        "author": "Carlos R.",
+        "role": "Digital Entrepreneur",
+        "revenue": "40% More Conversions"
+      },
+      {
+        "quote": "I was skeptical at first, but the automated follow-ups alone paid for the subscription 10x over. Lost leads are a thing of the past.",
+        "author": "Ana P.",
+        "role": "Premium Content Creator",
+        "revenue": "85% Lead Recovery"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Simple Pricing",
+    "subtitle": "Start free, scale as you grow",
+    "popular": "Most Popular",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "0",
+        "description": "Perfect for testing the waters",
+        "features": [
+          "Up to 50 conversations/month",
+          "Basic AI responses",
+          "1 Telegram account",
+          "Email support"
+        ],
+        "cta": "Start Free"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "29",
+        "description": "For growing creators",
+        "features": [
+          "Unlimited conversations",
+          "Advanced AI with tone matching",
+          "1 Telegram account",
+          "CRM tracking",
+          "Automated follow-ups",
+          "Priority support"
+        ],
+        "cta": "Start Pro Trial"
+      },
+      "scale": {
+        "name": "Scale",
+        "price": "79",
+        "description": "For serious businesses",
+        "features": [
+          "Everything in Pro",
+          "Multiple Telegram accounts",
+          "Custom AI training",
+          "API access",
+          "Dedicated account manager",
+          "White-label option"
+        ],
+        "cta": "Start Scale Trial"
+      }
+    },
+    "footer": "All plans include a 7-day free trial. No credit card required."
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "items": [
+      {
+        "question": "How does the AI learn my communication style?",
+        "answer": "During setup, you provide examples of your typical responses and set your personality preferences. The AI uses these to match your unique voice and tone."
+      },
+      {
+        "question": "Is my Telegram account secure?",
+        "answer": "Absolutely. We use Telegram's official API and never store your password. You can revoke access at any time from your Telegram settings."
+      },
+      {
+        "question": "Can I review messages before they're sent?",
+        "answer": "Yes! You can set the AI to require approval for certain message types, or let it operate autonomously. You're always in control."
+      },
+      {
+        "question": "What happens if the AI encounters something it can't handle?",
+        "answer": "The AI is trained to recognize complex situations and will flag them for your attention. You can step in anytime via the dashboard."
+      },
+      {
+        "question": "Can I cancel anytime?",
+        "answer": "Yes, no contracts or commitments. You can cancel your subscription at any time from your account settings."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Ready to Automate Your Sales?",
+    "subtitle": "Join thousands of creators who've transformed their Telegram business with AI.",
+    "cta": "Start Free Trial",
+    "note": "No credit card required • 7-day free trial"
+  },
+  "footer": {
+    "product": "Product",
+    "company": "Company",
+    "support": "Support",
+    "legal": "Legal",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About Us",
+    "blog": "Blog",
+    "helpCenter": "Help Center",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "© 2024 AI Telegram Bot. All rights reserved."
+  },
+  "languageSwitcher": {
+    "switchLanguage": "Switch Language"
+  },
+  "aiConfig": {
+    "title": "Describe your business",
+    "subtitle": "Tell us about your business and the AI will create a personalized configuration",
+    "placeholder": "e.g., I sell exclusive adult content on Telegram. My target audience is men aged 25-45. I want a flirty but professional tone that encourages subscriptions...",
+    "generateButton": "Generate AI Setup",
+    "regenerateButton": "Regenerate",
+    "applyButton": "Apply Configuration",
+    "generating": "AI is analyzing your business...",
+    "regenerating": "Regenerating...",
+    "applying": "Applying Configuration...",
+    "previewTitle": "Generated Configuration",
+    "editButton": "Edit",
+    "saveEditsButton": "Save",
+    "tweakPlaceholder": "e.g., Make it more aggressive, Add more emojis...",
+    "tone": "Tone",
+    "communicationStyle": "Communication Style",
+    "formality": "Formality",
+    "emojiUsage": "Emoji Usage",
+    "messageLength": "Length",
+    "salesStrategy": "Sales Strategy",
+    "approach": "Approach",
+    "upsellFrequency": "Frequency",
+    "callToAction": "Call to Action",
+    "targetAudience": "Target Audience",
+    "businessType": "Business Type",
+    "exampleMessages": "Example Messages",
+    "restrictedTopics": "Restricted Topics",
+    "wantToTweak": "Want to tweak it?",
+    "success": "Configuration applied successfully!",
+    "goToSettings": "Go to Settings →",
+    "tones": {
+      "serious": "Serious",
+      "friendly": "Friendly",
+      "sexy": "Sexy",
+      "explicit": "Explicit (+18)",
+      "playful": "Playful"
+    },
+    "formalityLevels": {
+      "low": "Casual",
+      "medium": "Balanced",
+      "high": "Formal"
+    },
+    "emojiLevels": {
+      "low": "Few emojis",
+      "medium": "Some emojis",
+      "high": "Lots of emojis"
+    },
+    "lengthLevels": {
+      "short": "Short messages",
+      "medium": "Medium length",
+      "long": "Detailed responses"
+    },
+    "approaches": {
+      "soft": "Soft approach",
+      "direct": "Direct approach",
+      "aggressive": "Aggressive approach"
+    },
+    "ctaStyles": {
+      "subtle": "Subtle CTAs",
+      "persuasive": "Persuasive CTAs",
+      "urgent": "Urgent CTAs"
+    },
+    "errors": {
+      "minLength": "Please provide a longer description (at least 10 characters)",
+      "generationFailed": "Failed to generate configuration",
+      "applyFailed": "Failed to apply configuration",
+      "invalidApiKey": "Invalid API key. Please check your API key in Settings."
+    },
+    "products": "Products & Services",
+    "addProduct": "Add Product",
+    "productName": "Name",
+    "productNamePlaceholder": "e.g., Premium Content Pack",
+    "productPrice": "Price",
+    "productPricePlaceholder": "e.g., $50-100",
+    "productDescription": "Description",
+    "productDescriptionPlaceholder": "Brief description of the product/service",
+    "productCategory": "Category",
+    "categoryContent": "Content",
+    "categoryService": "Service",
+    "categoryProduct": "Product",
+    "categorySubscription": "Subscription",
+    "noProducts": "No products generated. Add your products manually.",
+    "confirmProducts": "Are these your products/services?",
+    "confirmProductsDesc": "Review and edit the products above before saving. Add any missing products.",
+    "productsDisclaimer": "AI suggested products based on your description. Edit or add as needed.",
+    "tweakPlaceholder": "e.g., Change tone to more formal, Add product 'VIP Pack $100', Remove subscription products...",
+    "tweakHint": "Describe the specific changes you want: tone, products, prices, etc.",
+    "priceNote": "If you don't know the exact price, use 'Inquire' or 'Negotiable'",
+    "restrictions": "Restrictions",
+    "restrictionsPlaceholder": "e.g., Never mention prices directly, Don't share personal info, Avoid medical topics...",
+    "addRestriction": "Add Restriction",
+    "restrictionsHint": "Add topics or behaviors the AI should avoid",
+    "restrictionsEmpty": "No restrictions defined. Add restrictions to control AI behavior."
+  }
+}

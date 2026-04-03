@@ -1,0 +1,393 @@
+{
+  "auth": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "enterCredentials": "Ingresa tus credenciales para continuar",
+    "createAccountTitle": "Crear cuenta",
+    "createAccountSubtitle": "Comienza con tu cuenta gratuita",
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "createAccount": "Crear Cuenta",
+    "signingIn": "Iniciando sesión...",
+    "creatingAccount": "Creando cuenta...",
+    "emailPlaceholder": "Ingresa tu email",
+    "passwordPlaceholder": "Ingresa tu contraseña",
+    "namePlaceholder": "Ingresa tu nombre",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "haveAccount": "¿Ya tienes cuenta?",
+    "continueWithGoogle": "Continuar con Google",
+    "orContinueWith": "o continúa con",
+    "backToHome": "Volver al inicio",
+    "errors": {
+      "emailRequired": "El email es requerido",
+      "emailInvalid": "Ingresa un email válido",
+      "passwordRequired": "La contraseña es requerida",
+      "passwordShort": "La contraseña debe tener al menos 6 caracteres",
+      "nameRequired": "El nombre es requerido",
+      "oauthDenied": "Acceso denegado por Google",
+      "oauthFailed": "Error al autenticar con Google",
+      "oauthNotConfigured": "Google OAuth no está configurado. Contacta al administrador.",
+      "noCode": "Código de autorización no recibido"
+    },
+    "enableGoogle": "Para habilitar Google OAuth:",
+    "googleStep1": "Ve a Google Cloud Console",
+    "googleStep2": "Crea credenciales OAuth 2.0",
+    "googleStep3": "Agrega la URI de redirección a tus credenciales",
+    "googleStep4": "Agrega las variables de entorno en .env",
+    "branding": {
+      "headline1": "Automatiza Conversaciones.",
+      "headline2": "Aumenta tus Ingresos.",
+      "subheadline": "Tu asistente de IA que convierte chats en ventas 24/7.",
+      "feature1": "Respuestas con IA",
+      "feature2": "Tecnología de adaptación de tono",
+      "feature3": "Seguimientos automatizados",
+      "aiStatus": "Asistente IA Activo",
+      "chatUser": "¡Hola, estoy interesado en tu contenido premium!",
+      "chatAI": "¡Gracias por contactarme! Me encantaría ayudarte a comenzar. Déjame compartir las opciones..."
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todas como leídas",
+    "clearAll": "Limpiar todo",
+    "empty": "¡Estás al día!",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "thisWeek": "Esta Semana",
+    "earlier": "Anterior",
+    "delete": "Eliminar",
+    "types": {
+      "payment": "Pago",
+      "warning": "Advertencia",
+      "suggestion": "Sugerencia",
+      "info": "Información"
+    },
+    "actions": {
+      "viewDetails": "Ver Detalles",
+      "connectBot": "Conectar Bot",
+      "configureApi": "Configurar API",
+      "setupPayments": "Configurar Pagos",
+      "reconnect": "Reconectar",
+      "addContent": "Agregar Contenido"
+    }
+  },
+  "nav": {
+    "home": "Inicio",
+    "features": "Características",
+    "pricing": "Precios",
+    "testimonials": "Testimonios",
+    "login": "Iniciar Sesión",
+    "startFree": "Comenzar Gratis"
+  },
+  "hero": {
+    "badge": "Automatización de Ventas con IA",
+    "title": "Convierte Conversaciones en",
+    "titleHighlight": "Ingresos Automáticamente",
+    "subtitle": "Tu asistente de IA que maneja chats, adapta tonos, impulsa ventas y nunca duerme. Escala tu negocio en Telegram sin escalar tu carga de trabajo.",
+    "cta": "Comenzar Gratis",
+    "ctaSecondary": "Ver Demo",
+    "stats": {
+      "users": "Usuarios Activos",
+      "messages": "Mensajes Enviados",
+      "revenue": "Ingresos Generados"
+    }
+  },
+  "problem": {
+    "title": "Los Chats Manuales No Escalan",
+    "subtitle": "¿Te suena familiar?",
+    "problems": [
+      {
+        "title": "Abrumado por Mensajes",
+        "description": "Cientos de chats llegan diariamente. No puedes responder lo suficientemente rápido, y las ventas potenciales se escapan."
+      },
+      {
+        "title": "Respuestas Inconsistentes",
+        "description": "Respuestas cansadas, oportunidades perdidas, seguimientos olvidados. Tus ingresos sufren por las limitaciones humanas."
+      },
+      {
+        "title": "Sin Tiempo para Crecer",
+        "description": "Estás atrapado en el ciclo de los chats. No hay tiempo para crear contenido, estrategia, o escalar tu negocio."
+      }
+    ]
+  },
+  "solution": {
+    "title": "Conoce a Tu Compañero de Ventas IA",
+    "subtitle": "Automatiza conversaciones. Impulsa conversiones. Escala ingresos.",
+    "description": "Nuestra IA no solo responde—vende. Adapta tu tono único, recuerda cada cliente, y guía estratégicamente las conversaciones hacia compras.",
+    "features": [
+      "Responde 24/7 instantáneamente",
+      "Adapta tu voz única",
+      "Recuerda cada cliente",
+      "Impulsa ventas estratégicamente",
+      "Seguimientos automatizados"
+    ],
+    "cta": "Comenzar Gratis"
+  },
+  "features": {
+    "title": "Características Poderosas",
+    "subtitle": "Todo lo que necesitas para automatizar y escalar",
+    "items": {
+      "aiConversations": {
+        "title": "Conversaciones con IA",
+        "description": "Conversaciones naturales y atractivas que se sienten humanas. Tu IA aprende tu estilo y responde exactamente como tú lo harías.",
+        "tooltip": "Modelos de lenguaje avanzados entrenados en tu estilo de comunicación para mantener conversaciones auténticas"
+      },
+      "smartSales": {
+        "title": "Automatización Inteligente de Ventas",
+        "description": "Guía estratégicamente las conversaciones hacia compras sin ser insistente. Sabe cuándo ofrecer, cuándo hacer descuentos.",
+        "tooltip": "La IA analiza el contexto y timing de la conversación para optimizar los momentos de venta"
+      },
+      "toneMatching": {
+        "title": "Adaptación de Tono",
+        "description": "¿Coqueto? ¿Profesional? ¿Casual? La IA se adapta a tu voz de marca y combina con la energía del cliente.",
+        "tooltip": "Motor de personalidad dinámico que se ajusta según el comportamiento del cliente y tus preferencias"
+      },
+      "crmTracking": {
+        "title": "Seguimiento CRM",
+        "description": "Cada interacción del cliente registrada. Sabe quién está interesado, quién compró, y quién necesita seguimiento.",
+        "tooltip": "Perfiles completos de clientes con historial de compras, preferencias y métricas de engagement"
+      },
+      "followUps": {
+        "title": "Seguimientos Automatizados",
+        "description": "Nunca pierdas un lead. Recordatorios inteligentes y mensajes de re-engagement enviados en el momento perfecto.",
+        "tooltip": "Motor de timing potenciado por IA que determina los momentos óptimos de seguimiento"
+      }
+    }
+  },
+  "howItWorks": {
+    "title": "Cómo Funciona",
+    "subtitle": "Comienza en 3 simples pasos",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Conecta Tu Telegram",
+        "description": "Vincula tu cuenta de Telegram de forma segura. Usamos la API oficial de Telegram para una integración segura."
+      },
+      {
+        "number": "02",
+        "title": "Entrena Tu IA",
+        "description": "Configura tu personalidad, tono y estilo de ventas. La IA aprende cómo quieres comunicarte."
+      },
+      {
+        "number": "03",
+        "title": "Mira Crecer Tus Ingresos",
+        "description": "Tu IA maneja chats 24/7 mientras tú te enfocas en contenido, estrategia, o simplemente descansas."
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "Amado por Creadores",
+    "subtitle": "Mira lo que dicen nuestros usuarios",
+    "items": [
+      {
+        "quote": "Pasé de pasar 6 horas al día en chats a solo 30 minutos. Mis ingresos realmente aumentaron porque la IA es mejor cerrando ventas que yo.",
+        "author": "Sofia M.",
+        "role": "Creadora de Contenido",
+        "revenue": "3x Aumento de Ingresos"
+      },
+      {
+        "quote": "La adaptación de tono es increíble. Los clientes no pueden notar que están hablando con una IA. Mis calificaciones de satisfacción subieron.",
+        "author": "Carlos R.",
+        "role": "Emprendedor Digital",
+        "revenue": "40% Más Conversiones"
+      },
+      {
+        "quote": "Al principio era escéptico, pero los seguimientos automatizados solos pagaron la suscripción 10 veces. Los leads perdidos son cosa del pasado.",
+        "author": "Ana P.",
+        "role": "Creadora de Contenido Premium",
+        "revenue": "85% Recuperación de Leads"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Precios Simples",
+    "subtitle": "Comienza gratis, escala mientras creces",
+    "popular": "Más Popular",
+    "plans": {
+      "free": {
+        "name": "Gratis",
+        "price": "0",
+        "description": "Perfecto para probar",
+        "features": [
+          "Hasta 50 conversaciones/mes",
+          "Respuestas básicas de IA",
+          "1 cuenta de Telegram",
+          "Soporte por email"
+        ],
+        "cta": "Comenzar Gratis"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "29",
+        "description": "Para creadores en crecimiento",
+        "features": [
+          "Conversaciones ilimitadas",
+          "IA avanzada con adaptación de tono",
+          "1 cuenta de Telegram",
+          "Seguimiento CRM",
+          "Seguimientos automatizados",
+          "Soporte prioritario"
+        ],
+        "cta": "Prueba Pro Gratis"
+      },
+      "scale": {
+        "name": "Scale",
+        "price": "79",
+        "description": "Para negocios serios",
+        "features": [
+          "Todo en Pro",
+          "Múltiples cuentas de Telegram",
+          "Entrenamiento personalizado de IA",
+          "Acceso API",
+          "Gerente de cuenta dedicado",
+          "Opción white-label"
+        ],
+        "cta": "Prueba Scale Gratis"
+      }
+    },
+    "footer": "Todos los planes incluyen prueba gratis de 7 días. No se requiere tarjeta de crédito."
+  },
+  "faq": {
+    "title": "Preguntas Frecuentes",
+    "items": [
+      {
+        "question": "¿Cómo aprende la IA mi estilo de comunicación?",
+        "answer": "Durante la configuración, proporcionas ejemplos de tus respuestas típicas y estableces tus preferencias de personalidad. La IA usa estos para adaptar tu voz y tono únicos."
+      },
+      {
+        "question": "¿Está segura mi cuenta de Telegram?",
+        "answer": "Absolutamente. Usamos la API oficial de Telegram y nunca almacenamos tu contraseña. Puedes revocar el acceso en cualquier momento desde la configuración de Telegram."
+      },
+      {
+        "question": "¿Puedo revisar los mensajes antes de enviarlos?",
+        "answer": "¡Sí! Puedes configurar la IA para requerir aprobación para ciertos tipos de mensajes, o dejarla operar autónomamente. Siempre tienes el control."
+      },
+      {
+        "question": "¿Qué pasa si la IA encuentra algo que no puede manejar?",
+        "answer": "La IA está entrenada para reconocer situaciones complejas y las marcará para tu atención. Puedes intervenir en cualquier momento desde el dashboard."
+      },
+      {
+        "question": "¿Puedo cancelar en cualquier momento?",
+        "answer": "Sí, sin contratos ni compromisos. Puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "¿Listo para Automatizar Tus Ventas?",
+    "subtitle": "Únete a miles de creadores que han transformado su negocio en Telegram con IA.",
+    "cta": "Comenzar Prueba Gratis",
+    "note": "No se requiere tarjeta de crédito • Prueba gratis de 7 días"
+  },
+  "footer": {
+    "product": "Producto",
+    "company": "Compañía",
+    "support": "Soporte",
+    "legal": "Legal",
+    "features": "Características",
+    "pricing": "Precios",
+    "about": "Nosotros",
+    "blog": "Blog",
+    "helpCenter": "Centro de Ayuda",
+    "contact": "Contacto",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos de Servicio",
+    "copyright": "© 2024 AI Telegram Bot. Todos los derechos reservados."
+  },
+  "languageSwitcher": {
+    "switchLanguage": "Cambiar Idioma"
+  },
+  "aiConfig": {
+    "title": "Describe tu negocio",
+    "subtitle": "Cuéntanos sobre tu negocio y la IA creará una configuración personalizada",
+    "placeholder": "ej., Vendo contenido exclusivo en Telegram. Mi público objetivo son hombres de 25-45 años. Quiero un tono coqueto pero profesional que fomente las suscripciones...",
+    "generateButton": "Generar Configuración IA",
+    "regenerateButton": "Regenerar",
+    "applyButton": "Aplicar Configuración",
+    "generating": "La IA está analizando tu negocio...",
+    "regenerating": "Regenerando...",
+    "applying": "Aplicando Configuración...",
+    "previewTitle": "Configuración Generada",
+    "editButton": "Editar",
+    "saveEditsButton": "Guardar",
+    "tweakPlaceholder": "ej., Hazlo más agresivo, Agrega más emojis...",
+    "tone": "Tono",
+    "communicationStyle": "Estilo de Comunicación",
+    "formality": "Formalidad",
+    "emojiUsage": "Emojis",
+    "messageLength": "Longitud",
+    "salesStrategy": "Estrategia de Ventas",
+    "approach": "Enfoque",
+    "upsellFrequency": "Frecuencia",
+    "callToAction": "Llamada a Acción",
+    "targetAudience": "Público Objetivo",
+    "businessType": "Tipo de Negocio",
+    "exampleMessages": "Mensajes de Ejemplo",
+    "restrictedTopics": "Temas Restringidos",
+    "wantToTweak": "¿Quieres ajustarlo?",
+    "success": "¡Configuración aplicada exitosamente!",
+    "goToSettings": "Ir a Configuración →",
+    "tones": {
+      "serious": "Serio",
+      "friendly": "Amigable",
+      "sexy": "Sexy",
+      "explicit": "Explícito (+18)",
+      "playful": "Juguetón"
+    },
+    "formalityLevels": {
+      "low": "Casual",
+      "medium": "Equilibrado",
+      "high": "Formal"
+    },
+    "emojiLevels": {
+      "low": "Pocos emojis",
+      "medium": "Algunos emojis",
+      "high": "Muchos emojis"
+    },
+    "lengthLevels": {
+      "short": "Mensajes cortos",
+      "medium": "Longitud media",
+      "long": "Respuestas detalladas"
+    },
+    "approaches": {
+      "soft": "Enfoque suave",
+      "direct": "Enfoque directo",
+      "aggressive": "Enfoque agresivo"
+    },
+    "ctaStyles": {
+      "subtle": "CTA sutiles",
+      "persuasive": "CTA persuasivos",
+      "urgent": "CTA urgentes"
+    },
+    "errors": {
+      "minLength": "Proporciona una descripción más larga (al menos 10 caracteres)",
+      "generationFailed": "Error al generar la configuración",
+      "applyFailed": "Error al aplicar la configuración",
+      "invalidApiKey": "API key inválida. Por favor configura tu API key en Configuración."
+    },
+    "products": "Productos y Servicios",
+    "addProduct": "Agregar Producto",
+    "productName": "Nombre",
+    "productNamePlaceholder": "ej., Pack de Contenido Premium",
+    "productPrice": "Precio",
+    "productPricePlaceholder": "ej., $50-100",
+    "productDescription": "Descripción",
+    "productDescriptionPlaceholder": "Descripción breve del producto/servicio",
+    "productCategory": "Categoría",
+    "categoryContent": "Contenido",
+    "categoryService": "Servicio",
+    "categoryProduct": "Producto",
+    "categorySubscription": "Suscripción",
+    "noProducts": "No se generaron productos. Agrega tus productos manualmente.",
+    "confirmProducts": "¿Estos son tus productos/servicios?",
+    "confirmProductsDesc": "Revisa y edita los productos arriba antes de guardar. Agrega cualquier producto faltante.",
+    "productsDisclaimer": "Productos sugeridos por IA basados en tu descripción. Edita o agrega según necesites.",
+    "tweakPlaceholder": "ej., Cambiar tono a más formal, Agregar producto 'Pack VIP $100', Quitar productos de suscripción...",
+    "tweakHint": "Describe los cambios específicos que deseas: tono, productos, precios, etc.",
+    "priceNote": "Si no conoces el precio exacto, usa 'Consultar' o 'A convenir'",
+    "restrictions": "Restricciones",
+    "restrictionsPlaceholder": "ej., Nunca mencionar precios directamente, No compartir info personal, Evitar temas médicos...",
+    "addRestriction": "Agregar Restricción",
+    "restrictionsHint": "Agrega temas o comportamientos que la IA debe evitar",
+    "restrictionsEmpty": "Sin restricciones definidas. Agrega restricciones para controlar el comportamiento de la IA."
+  }
+}
