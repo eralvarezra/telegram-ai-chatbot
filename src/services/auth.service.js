@@ -126,8 +126,11 @@ const verifyPassword = (user, password) => {
  * Update last login
  */
 const updateLastLogin = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   return prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { last_login: new Date() }
   });
 };
@@ -153,8 +156,11 @@ const getAllAdminUsers = async () => {
  * Delete admin user
  */
 const deleteAdminUser = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   return prisma.adminUser.delete({
-    where: { id: userId }
+    where: { id: userIdInt }
   });
 };
 
@@ -162,8 +168,11 @@ const deleteAdminUser = async (userId) => {
  * Complete user onboarding
  */
 const completeOnboarding = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   return prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { onboarding_completed: true }
   });
 };
@@ -172,8 +181,11 @@ const completeOnboarding = async (userId) => {
  * Check if user needs onboarding
  */
 const needsOnboarding = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: { onboarding_completed: true }
   });
   return !user?.onboarding_completed;
