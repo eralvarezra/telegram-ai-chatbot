@@ -1,6 +1,5 @@
 const OpenAI = require('openai');
-const setupService = require('./setup.service');
-const userCredentialsService = require('./userCredentials.service');
+const apiKeyService = require('./apiKey.service');
 const logger = require('../utils/logger');
 
 /**
@@ -26,19 +25,21 @@ const INTENT_TYPES = {
  */
 const classifyIntent = async (userMessage, ownerId = null) => {
   try {
-    // Get AI credentials
-    let aiCreds = null;
+    // Get AI credentials using the dual API key system
+    let apiKey, provider;
 
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
+    try {
+      const keyInfo = await apiKeyService.getApiKeyForUser(ownerId);
+      apiKey = keyInfo.apiKey;
+      provider = keyInfo.provider;
+      logger.debug(`IntentClassifier: Using ${keyInfo.keyType} API key for owner ${ownerId}`);
+    } catch (keyError) {
+      logger.warn('IntentClassifier: No API key available:', keyError.message);
+      return classifyIntentFallback(userMessage);
     }
 
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
-      logger.warn('No AI credentials for intent classification, using fallback');
+    if (!apiKey) {
+      logger.warn('IntentClassifier: No API key available, using fallback');
       return classifyIntentFallback(userMessage);
     }
 
@@ -80,12 +81,12 @@ Reasoning should be very brief (max 10 words).
 selected_option should be the number or name the user selected (only for service_selection intent).`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: apiKey,
+      baseURL: provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }

@@ -1,10 +1,22 @@
 const mediaService = require('./media.service');
 const configService = require('./config.service');
-const userCredentialsService = require('./userCredentials.service');
-const setupService = require('./setup.service');
+const apiKeyService = require('./apiKey.service');
 const prisma = require('../config/database');
 const logger = require('../utils/logger');
 const OpenAI = require('openai');
+
+/**
+ * Helper to get API key using the dual API key system
+ */
+const getApiKey = async (ownerId) => {
+  try {
+    const keyInfo = await apiKeyService.getApiKeyForUser(ownerId);
+    return { apiKey: keyInfo.apiKey, provider: keyInfo.provider };
+  } catch (error) {
+    logger.warn('servicesMenu: No API key available:', error.message);
+    return null;
+  }
+};
 
 /**
  * Get available services from products table and config fallback
@@ -92,15 +104,8 @@ const getAvailableServices = async (ownerId = null) => {
 const generateServicesMenuMessage = async (services, botConfig, ownerId = null) => {
   try {
     // Get AI credentials
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackMenuMessage(services, botConfig);
     }
 
@@ -133,12 +138,12 @@ REGLAS:
 Responde SOLO con el mensaje, nada más.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera un mensaje para mostrar las opciones' }
@@ -205,15 +210,8 @@ const generateFallbackMenuMessage = (services, botConfig) => {
  */
 const generateServiceConfirmationMessage = async (service, botConfig, ownerId = null) => {
   try {
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackConfirmationMessage(service, botConfig);
     }
 
@@ -237,12 +235,12 @@ REGLAS:
 Responde SOLO con el mensaje.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera un mensaje de confirmación' }
@@ -354,15 +352,8 @@ const capitalizeFirst = (str) => {
  */
 const generateMediaFollowUpMessage = async (botConfig, mediaCount = 1, ownerId = null) => {
   try {
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackFollowUpMessage(botConfig);
     }
 
@@ -398,12 +389,12 @@ REGLAS:
 Responde SOLO con el mensaje, nada más.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera el mensaje' }
@@ -465,15 +456,8 @@ const generateFallbackFollowUpMessage = (botConfig) => {
  */
 const generateInvalidSelectionMessage = async (botConfig, services, ownerId = null) => {
   try {
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackInvalidSelectionMessage(services, botConfig);
     }
 
@@ -503,12 +487,12 @@ REGLAS:
 Responde SOLO con el mensaje.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera un mensaje pidiendo que seleccione una opción válida' }
@@ -569,15 +553,8 @@ const generateFallbackInvalidSelectionMessage = (services, botConfig) => {
  */
 const generateMenuRedirectMessage = async (botConfig, services, ownerId = null) => {
   try {
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackMenuRedirectMessage(services, botConfig);
     }
 
@@ -610,12 +587,12 @@ REGLAS:
 Responde SOLO con el mensaje (la lista de opciones se agregará automáticamente).`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera un mensaje para redirigir a los servicios' }
@@ -689,15 +666,8 @@ const generateFallbackMenuRedirectMessage = (services, botConfig) => {
  */
 const generateInterestResponse = async (botConfig, ownerId = null) => {
   try {
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackInterestResponse(botConfig);
     }
 
@@ -730,12 +700,12 @@ REGLAS IMPORTANTES:
 Responde SOLO con el mensaje, nada más.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'El usuario dijo que le interesa el contenido' }
@@ -845,15 +815,8 @@ const formatPaymentMethods = async (methods, botConfig) => {
 const generateRecommendationResponse = async (services, botConfig, ownerId = null) => {
   try {
     // Get AI credentials
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackRecommendationResponse(services, botConfig);
     }
 
@@ -947,12 +910,12 @@ Responde SOLO con el mensaje, nada más.`;
     }
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: '¿Cuál me recomiendas?' }

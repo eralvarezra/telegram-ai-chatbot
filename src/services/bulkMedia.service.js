@@ -1,29 +1,32 @@
 const mediaService = require('./media.service');
 const userService = require('./user.service');
 const configService = require('./config.service');
-const userCredentialsService = require('./userCredentials.service');
-const setupService = require('./setup.service');
+const apiKeyService = require('./apiKey.service');
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
 const OpenAI = require('openai');
 
 /**
+ * Helper to get API key using the dual API key system
+ */
+const getApiKey = async (ownerId) => {
+  try {
+    const keyInfo = await apiKeyService.getApiKeyForUser(ownerId);
+    return { apiKey: keyInfo.apiKey, provider: keyInfo.provider };
+  } catch (error) {
+    logger.warn('bulkMedia: No API key available:', error.message);
+    return null;
+  }
+};
+
+/**
  * Generate a natural, varied caption for media using AI
  */
 const generateNaturalCaption = async (media, botConfig, ownerId = null) => {
   try {
-    // Get AI credentials
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
-      // Fallback to simple caption
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return generateFallbackCaption(media, botConfig);
     }
 
@@ -51,12 +54,12 @@ Tono: ${botTone === 'serious' ? 'Profesional y formal' : botTone === 'sexy' ? 'C
 Responde SOLO con el caption, nada más. Sin comillas ni explicaciones.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera un caption corto y natural' }
@@ -112,16 +115,8 @@ const generateFallbackCaption = (media, botConfig) => {
  */
 const generateFollowUpMessage = async (mediaCount, botConfig, ownerId = null) => {
   try {
-    // Get AI credentials
-    let aiCreds = null;
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
+    const keyInfo = await getApiKey(ownerId);
+    if (!keyInfo) {
       return getFallbackFollowUp(botConfig, mediaCount);
     }
 
@@ -144,12 +139,12 @@ Tono: ${botTone === 'serious' ? 'Profesional' : botTone === 'sexy' ? 'Coqueto' :
 Responde SOLO con el mensaje, nada más. Sin comillas.`;
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: keyInfo.apiKey,
+      baseURL: keyInfo.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: keyInfo.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera un mensaje de seguimiento corto y natural' }

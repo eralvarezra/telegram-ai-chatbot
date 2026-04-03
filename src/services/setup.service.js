@@ -100,6 +100,7 @@ const getAICredentials = async () => {
   const setup = await prisma.appSetup.findUnique({ where: { id: 1 } });
 
   if (setup && setup.ai_api_key) {
+    logger.debug('getAICredentials: Using database credentials');
     return {
       provider: setup.ai_provider || 'groq',
       apiKey: setup.ai_api_key
@@ -109,12 +110,14 @@ const getAICredentials = async () => {
   // Fallback to environment variables
   const envApiKey = process.env.AI_API_KEY || process.env.PLATFORM_GROQ_KEY;
   if (envApiKey) {
+    logger.debug(`getAICredentials: Using env var, key: ${envApiKey.substring(0, 15)}...`);
     return {
       provider: 'groq',
       apiKey: envApiKey
     };
   }
 
+  logger.warn('getAICredentials: No API key found in database or env vars');
   return null;
 };
 

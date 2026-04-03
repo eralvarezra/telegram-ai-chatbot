@@ -214,30 +214,10 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
     keyType = keyInfo.keyType;
     logger.debug(`Using ${keyType} API key for user ${effectiveUserId} (${provider})`);
   } catch (apiKeyError) {
-    // Fallback to legacy credential system for backward compatibility
-    logger.debug('Falling back to legacy credential system:', apiKeyError.message);
+    logger.warn('API key error:', apiKeyError.message);
 
-    let aiCreds = null;
-
-    if (ownerId) {
-      aiCreds = await userCredentialsService.getAICredentials(ownerId);
-    }
-
-    if (!aiCreds && userId) {
-      aiCreds = await userCredentialsService.getAICredentials(userId);
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
-      aiCreds = await setupService.getAICredentials();
-    }
-
-    if (!aiCreds || !aiCreds.apiKey) {
-      throw new ExternalServiceError('AI API key not configured. Add your API key or contact support.', 'AI');
-    }
-
-    apiKey = aiCreds.apiKey;
-    provider = aiCreds.provider || 'groq';
-    keyType = 'legacy';
+    // Re-throw the error - user needs to configure their key
+    throw apiKeyError;
   }
 
   // Check if user has a custom agent (premium feature)
@@ -265,7 +245,7 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
   logger.debug(`Conversation: isNew=${conversationContext.isNewConversation}, lang=${conversationContext.primaryLanguage}`);
 
   // Detect user tone
-  const detectedTone = await toneService.detectTone(userMessage);
+  const detectedTone = await toneService.detectTone(userMessage, effectiveUserId);
 
   // Get gender mode
   const userGenderMode = botConfig.user_gender_mode || 'auto';

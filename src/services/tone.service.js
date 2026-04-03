@@ -1,5 +1,5 @@
 const OpenAI = require('openai');
-const setupService = require('./setup.service');
+const apiKeyService = require('./apiKey.service');
 const logger = require('../utils/logger');
 
 // Valid tone values
@@ -18,24 +18,29 @@ const TONE_INSTRUCTIONS = {
 /**
  * Detect the tone of a user message using AI
  * @param {string} message - The user's message
+ * @param {string|null} ownerId - Owner ID for API key lookup
  * @returns {Promise<string>} - Detected tone (one of VALID_TONES)
  */
-const detectTone = async (message) => {
+const detectTone = async (message, ownerId = null) => {
   try {
-    const aiCreds = await setupService.getAICredentials();
-
-    if (!aiCreds || !aiCreds.apiKey) {
-      logger.warn('AI credentials not available for tone detection, defaulting to friendly');
+    // Get API key using the dual system
+    let apiKey, provider;
+    try {
+      const keyInfo = await apiKeyService.getApiKeyForUser(ownerId);
+      apiKey = keyInfo.apiKey;
+      provider = keyInfo.provider;
+    } catch (error) {
+      logger.warn('Tone detection: No API key available, defaulting to friendly');
       return 'friendly';
     }
 
     const client = new OpenAI({
-      apiKey: aiCreds.apiKey,
-      baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+      apiKey: apiKey,
+      baseURL: provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
     });
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -63,7 +68,7 @@ Example responses: friendly, playful, dry, interested, cold, negative`
 
     // Validate the detected tone
     if (VALID_TONES.includes(detectedTone)) {
-      logger.info(`Tone detected: "${detectedTone}" for message: "${message.substring(0, 50)}..."`);
+      logger.debug(`Tone detected: "${detectedTone}" for message: "${message.substring(0, 50)}..."`);
       return detectedTone;
     }
 

@@ -10,9 +10,9 @@ const OpenAI = require('openai');
  * @returns {Promise<{ apiKey: string, provider: string, keyType: string }>}
  */
 const getApiKeyForUser = async (userId) => {
-  // First check if we have a platform key available (for premium or fallback)
   const platformKey = process.env.PLATFORM_GROQ_KEY || process.env.AI_API_KEY;
 
+  // Get user info
   const user = await prisma.adminUser.findUnique({
     where: { id: userId },
     select: {
@@ -23,24 +23,25 @@ const getApiKeyForUser = async (userId) => {
     }
   });
 
-  // If user not found or has no plan set, use platform key if available
+  // If user not found, check for platform key
   if (!user) {
     if (platformKey) {
+      logger.debug(`User ${userId} not found, using platform key as fallback`);
       return {
         apiKey: platformKey,
         provider: 'groq',
         keyType: 'platform'
       };
     }
-    throw new ApiKeyError('User not found');
+    throw new ApiKeyError('User not found. Please log in again.');
   }
 
-  // Premium users use platform key
+  // Premium users ALWAYS use platform key
   if (user.plan === 'premium') {
     if (!platformKey) {
       throw new ApiKeyError('Platform API key not configured. Contact support.');
     }
-
+    logger.debug(`Using platform key for premium user ${userId}`);
     return {
       apiKey: platformKey,
       provider: 'groq',
@@ -50,19 +51,22 @@ const getApiKeyForUser = async (userId) => {
 
   // Free users must have their own key
   if (!user.user_api_key || !user.user_api_key_iv) {
-    // If no user key but platform key exists, use it as fallback for onboarding
+    // During onboarding, allow platform key temporarily for free users
+    // This allows them to complete personality setup before adding their own key
     if (platformKey) {
+      logger.debug(`Free user ${userId} has no key, using platform key temporarily`);
       return {
         apiKey: platformKey,
         provider: 'groq',
-        keyType: 'platform'
+        keyType: 'platform_temp'
       };
     }
-    throw new ApiKeyError('API key required. Please add your API key to continue.');
+    throw new ApiKeyError('API key required. Please add your Groq API key in Settings.');
   }
 
   try {
     const decryptedKey = decryptApiKey(user.user_api_key, user.user_api_key_iv);
+    logger.debug(`Using user's own API key for free user ${userId}`);
     return {
       apiKey: decryptedKey,
       provider: user.user_api_provider || 'groq',
