@@ -3,6 +3,7 @@ const prisma = require('../config/database');
 const configService = require('./config.service');
 const setupService = require('./setup.service');
 const userCredentialsService = require('./userCredentials.service');
+const apiKeyService = require('./apiKey.service');
 const { ExternalServiceError, ValidationError, NotFoundError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
@@ -210,20 +211,38 @@ IMPORTANT PRICE RULES:
 
 // Generate AI configuration from description
 const generateConfigFromDescription = async (description, language = null, userId = null, ownerId = null) => {
-  // Get AI credentials
-  let aiCreds = null;
+  // Get AI credentials - try new dual API key system first
+  let apiKey, provider;
 
-  if (ownerId) {
-    aiCreds = await userCredentialsService.getAICredentials(ownerId);
-  }
-  if (!aiCreds && userId) {
-    aiCreds = await userCredentialsService.getAICredentials(userId);
-  }
-  if (!aiCreds || !aiCreds.apiKey) {
-    aiCreds = await setupService.getAICredentials();
+  const effectiveUserId = ownerId || userId;
+
+  try {
+    const keyInfo = await apiKeyService.getApiKeyForUser(effectiveUserId);
+    apiKey = keyInfo.apiKey;
+    provider = keyInfo.provider;
+    logger.debug(`AI Config: Using ${keyInfo.keyType} API key for user ${effectiveUserId}`);
+  } catch (keyError) {
+    logger.debug('AI Config: Key service error, trying fallbacks:', keyError.message);
+
+    // Fallback: try legacy credential system
+    let aiCreds = null;
+    if (ownerId) {
+      aiCreds = await userCredentialsService.getAICredentials(ownerId);
+    }
+    if (!aiCreds && userId) {
+      aiCreds = await userCredentialsService.getAICredentials(userId);
+    }
+    if (!aiCreds || !aiCreds.apiKey) {
+      aiCreds = await setupService.getAICredentials();
+    }
+
+    if (aiCreds && aiCreds.apiKey) {
+      apiKey = aiCreds.apiKey;
+      provider = aiCreds.provider || 'groq';
+    }
   }
 
-  if (!aiCreds || !aiCreds.apiKey) {
+  if (!apiKey) {
     throw new ExternalServiceError(
       'AI API key not configured. Please go to Settings > Setup to configure your Groq or OpenAI API key.',
       'AI'
@@ -236,15 +255,15 @@ const generateConfigFromDescription = async (description, language = null, userI
   const systemPrompt = buildConfigSystemPrompt(detectedLanguage);
 
   const client = new OpenAI({
-    apiKey: aiCreds.apiKey,
-    baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+    apiKey: apiKey,
+    baseURL: provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
   });
 
   try {
     logger.info(`Generating AI config for description: "${description.substring(0, 50)}..."`);
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Business description: ${description}` }
@@ -257,7 +276,7 @@ const generateConfigFromDescription = async (description, language = null, userI
     const rawOutput = completion.choices[0]?.message?.content;
 
     if (!rawOutput) {
-      throw new ExternalServiceError('Empty response from AI', aiCreds.provider);
+      throw new ExternalServiceError('Empty response from AI', provider);
     }
 
     let aiOutput;
@@ -305,26 +324,26 @@ const generateConfigFromDescription = async (description, language = null, userI
     if (error.message?.includes('401') || error.message?.includes('Invalid API Key') || error.status === 401) {
       throw new ExternalServiceError(
         'Invalid API key. Please check your API key in Settings > Setup. Make sure you have a valid Groq or OpenAI API key.',
-        aiCreds?.provider || 'AI'
+        provider || 'AI'
       );
     }
 
     if (error.message?.includes('429') || error.status === 429) {
       throw new ExternalServiceError(
         'API rate limit exceeded. Please wait a moment and try again.',
-        aiCreds?.provider || 'AI'
+        provider || 'AI'
       );
     }
 
     throw new ExternalServiceError(
       error.message || 'Failed to generate configuration. Please try again.',
-      aiCreds?.provider || 'AI'
+      provider || 'AI'
     );
   }
 };
 
 // Apply AI-generated config to BotConfig
-const applyGeneratedConfig = async (generationId, editedConfig = null) => {
+const applyGeneratedConfig = async (generationId, editedConfig = null, userId = null) => {
   const generation = await prisma.aIConfigGeneration.findUnique({
     where: { id: generationId }
   });
@@ -364,6 +383,40 @@ const applyGeneratedConfig = async (generationId, editedConfig = null) => {
   // Update BotConfig
   const updatedConfig = await configService.updateConfig(botConfigUpdate);
 
+  // Create Product records for each product in AI output
+  if (configToApply.products && Array.isArray(configToApply.products) && configToApply.products.length > 0) {
+    logger.info(`Creating ${configToApply.products.length} products from AI generation`);
+
+    for (const product of configToApply.products) {
+      if (product.name && product.name.trim()) {
+        // Check if product already exists
+        const existingProduct = await prisma.product.findFirst({
+          where: {
+            name: product.name.trim(),
+            owner_user_id: userId || 1
+          }
+        });
+
+        if (!existingProduct) {
+          // Create new product
+          await prisma.product.create({
+            data: {
+              name: product.name.trim(),
+              description: product.description || '',
+              price: product.price_range && product.price_range !== 'Consultar'
+                ? parseFloat(product.price_range.replace(/[^0-9.]/g, '')) || null
+                : null,
+              type: product.category || 'service',
+              owner_user_id: userId || 1,
+              is_active: true
+            }
+          });
+          logger.debug(`Created product: ${product.name}`);
+        }
+      }
+    }
+  }
+
   // Mark generation as applied
   await prisma.aIConfigGeneration.update({
     where: { id: generationId },
@@ -385,13 +438,32 @@ const regenerateConfig = async (generationId, tweakInstruction, userId = null, o
     throw new NotFoundError('Original generation not found');
   }
 
-  // Get AI credentials
-  let aiCreds = null;
-  if (ownerId) aiCreds = await userCredentialsService.getAICredentials(ownerId);
-  if (!aiCreds && userId) aiCreds = await userCredentialsService.getAICredentials(userId);
-  if (!aiCreds || !aiCreds.apiKey) aiCreds = await setupService.getAICredentials();
+  // Get AI credentials - try new dual API key system first
+  let apiKey, provider;
 
-  if (!aiCreds || !aiCreds.apiKey) {
+  const effectiveUserId = ownerId || userId;
+
+  try {
+    const keyInfo = await apiKeyService.getApiKeyForUser(effectiveUserId);
+    apiKey = keyInfo.apiKey;
+    provider = keyInfo.provider;
+    logger.debug(`AI Config Regenerate: Using ${keyInfo.keyType} API key for user ${effectiveUserId}`);
+  } catch (keyError) {
+    logger.debug('AI Config Regenerate: Key service error, trying fallbacks:', keyError.message);
+
+    // Fallback: try legacy credential system
+    let aiCreds = null;
+    if (ownerId) aiCreds = await userCredentialsService.getAICredentials(ownerId);
+    if (!aiCreds && userId) aiCreds = await userCredentialsService.getAICredentials(userId);
+    if (!aiCreds || !aiCreds.apiKey) aiCreds = await setupService.getAICredentials();
+
+    if (aiCreds && aiCreds.apiKey) {
+      apiKey = aiCreds.apiKey;
+      provider = aiCreds.provider || 'groq';
+    }
+  }
+
+  if (!apiKey) {
     throw new ExternalServiceError(
       'AI API key not configured. Please go to Settings > Setup to configure your Groq or OpenAI API key.',
       'AI'
@@ -418,15 +490,15 @@ CRITICAL INSTRUCTIONS:
 Please modify the configuration based on the user's feedback. Keep the same JSON structure.`;
 
   const client = new OpenAI({
-    apiKey: aiCreds.apiKey,
-    baseURL: aiCreds.provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
+    apiKey: apiKey,
+    baseURL: provider === 'groq' ? 'https://api.groq.com/openai/v1' : undefined
   });
 
   try {
     logger.info(`Regenerating config ${generationId} with tweak: "${tweakInstruction}"`);
 
     const completion = await client.chat.completions.create({
-      model: aiCreds.provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+      model: provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: tweakPrompt }
@@ -439,7 +511,7 @@ Please modify the configuration based on the user's feedback. Keep the same JSON
     const rawOutput = completion.choices[0]?.message?.content;
 
     if (!rawOutput) {
-      throw new ExternalServiceError('Empty response from AI', aiCreds.provider);
+      throw new ExternalServiceError('Empty response from AI', provider);
     }
 
     let aiOutput;
@@ -484,20 +556,20 @@ Please modify the configuration based on the user's feedback. Keep the same JSON
     if (error.message?.includes('401') || error.message?.includes('Invalid API Key') || error.status === 401) {
       throw new ExternalServiceError(
         'Invalid API key. Please check your API key in Settings > Setup.',
-        aiCreds?.provider || 'AI'
+        provider || 'AI'
       );
     }
 
     if (error.message?.includes('429') || error.status === 429) {
       throw new ExternalServiceError(
         'API rate limit exceeded. Please wait a moment and try again.',
-        aiCreds?.provider || 'AI'
+        provider || 'AI'
       );
     }
 
     throw new ExternalServiceError(
       error.message || 'Failed to regenerate configuration. Please try again.',
-      aiCreds?.provider || 'AI'
+      provider || 'AI'
     );
   }
 };

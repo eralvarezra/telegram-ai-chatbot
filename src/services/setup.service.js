@@ -99,14 +99,23 @@ const getTelegramCredentials = async () => {
 const getAICredentials = async () => {
   const setup = await prisma.appSetup.findUnique({ where: { id: 1 } });
 
-  if (!setup || !setup.ai_api_key) {
-    return null;
+  if (setup && setup.ai_api_key) {
+    return {
+      provider: setup.ai_provider || 'groq',
+      apiKey: setup.ai_api_key
+    };
   }
 
-  return {
-    provider: setup.ai_provider,
-    apiKey: setup.ai_api_key
-  };
+  // Fallback to environment variables
+  const envApiKey = process.env.AI_API_KEY || process.env.PLATFORM_GROQ_KEY;
+  if (envApiKey) {
+    return {
+      provider: 'groq',
+      apiKey: envApiKey
+    };
+  }
+
+  return null;
 };
 
 // Clear Telegram credentials (unlink)

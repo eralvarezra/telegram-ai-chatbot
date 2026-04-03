@@ -112,14 +112,16 @@ router.post('/regenerate/:id', requireAuth, async (req, res) => {
 
 // POST /api/ai-config/apply/:id
 // Apply generated configuration to BotConfig
-router.post('/apply/:id', async (req, res) => {
+router.post('/apply/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { editedConfig } = req.body;
+    const userId = req.userId;
 
     const result = await aiConfigService.applyGeneratedConfig(
       parseInt(id),
-      editedConfig
+      editedConfig,
+      userId
     );
 
     res.json({

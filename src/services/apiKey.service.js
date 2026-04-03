@@ -10,6 +10,9 @@ const OpenAI = require('openai');
  * @returns {Promise<{ apiKey: string, provider: string, keyType: string }>}
  */
 const getApiKeyForUser = async (userId) => {
+  // First check if we have a platform key available (for premium or fallback)
+  const platformKey = process.env.PLATFORM_GROQ_KEY || process.env.AI_API_KEY;
+
   const user = await prisma.adminUser.findUnique({
     where: { id: userId },
     select: {
@@ -20,27 +23,41 @@ const getApiKeyForUser = async (userId) => {
     }
   });
 
+  // If user not found or has no plan set, use platform key if available
   if (!user) {
+    if (platformKey) {
+      return {
+        apiKey: platformKey,
+        provider: 'groq',
+        keyType: 'platform'
+      };
+    }
     throw new ApiKeyError('User not found');
   }
 
   // Premium users use platform key
   if (user.plan === 'premium') {
-    const platformKey = process.env.PLATFORM_GROQ_KEY || process.env.PLATFORM_OPENAI_KEY;
     if (!platformKey) {
       throw new ApiKeyError('Platform API key not configured. Contact support.');
     }
 
-    const provider = process.env.PLATFORM_GROQ_KEY ? 'groq' : 'openai';
     return {
       apiKey: platformKey,
-      provider,
+      provider: 'groq',
       keyType: 'platform'
     };
   }
 
   // Free users must have their own key
   if (!user.user_api_key || !user.user_api_key_iv) {
+    // If no user key but platform key exists, use it as fallback for onboarding
+    if (platformKey) {
+      return {
+        apiKey: platformKey,
+        provider: 'groq',
+        keyType: 'platform'
+      };
+    }
     throw new ApiKeyError('API key required. Please add your API key to continue.');
   }
 

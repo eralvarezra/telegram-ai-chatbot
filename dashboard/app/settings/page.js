@@ -2,9 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { Save, RefreshCw, User, CreditCard, MessageSquare, Settings as SettingsIcon, Sparkles, Bell, Key, Link2, Unlink, AlertTriangle, X, Send, Play, Square, Bot, Plus, Trash2, Check, Package, Eye, EyeOff, Edit2, DollarSign } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Save, RefreshCw, User, CreditCard, MessageSquare, Settings as SettingsIcon, Sparkles, Bell, Key, Link2, Unlink, AlertTriangle, X, Send, Play, Square, Bot, Plus, Trash2, Check, Package, Eye, EyeOff, Edit2, DollarSign, Crown } from 'lucide-react';
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const isPremium = user?.plan === 'premium';
+
   const [config, setConfig] = useState({
     bot_name: 'Shey',
     bot_location: 'Costa Rica',
@@ -805,69 +809,97 @@ export default function SettingsPage() {
             </div>
 
             {/* Groq/AI Status */}
-            <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Key className="text-orange-400" size={18} />
-                  <span className="text-white font-medium">Groq / IA</span>
-                </div>
-                {credentials.ai ? (
-                  <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs rounded-full">Conectado</span>
-                ) : (
-                  <span className="px-2 py-1 bg-red-900/50 text-red-400 text-xs rounded-full">No conectado</span>
-                )}
-              </div>
-              {credentials.ai && (
-                <div className="text-sm text-zinc-400 mb-3">
-                  <p>Provider: {credentials.ai.provider.toUpperCase()}</p>
-                  <p className="text-xs text-zinc-500">Key: {credentials.ai.keyPreview}</p>
-                </div>
-              )}
-              {credentials.ai ? (
-                showUnlinkConfirm === 'ai' ? (
+            {isPremium ? (
+              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleUnlink('ai')}
-                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg"
-                    >
-                      Confirmar
-                    </button>
-                    <button
-                      onClick={() => setShowUnlinkConfirm(null)}
-                      className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-sm rounded-lg"
-                    >
-                      Cancelar
-                    </button>
+                    <Crown className="text-yellow-400" size={18} />
+                    <span className="text-white font-medium">API de Groq Incluida</span>
                   </div>
+                  <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                    Activa
+                  </span>
+                </div>
+                <div className="text-sm text-zinc-300 mb-3">
+                  <p>Tu plan Premium incluye acceso ilimitado a la API de Groq.</p>
+                  <p className="text-xs text-zinc-400 mt-1">Sin configuración adicional necesaria.</p>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-purple-300">
+                  <span className="flex items-center gap-1"><Check size={12} /> Mensajes ilimitados</span>
+                  <span className="text-zinc-600">•</span>
+                  <span className="flex items-center gap-1"><Check size={12} /> IA de alta velocidad</span>
+                  <span className="text-zinc-600">•</span>
+                  <span className="flex items-center gap-1"><Check size={12} /> Agente personalizado</span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Key className="text-orange-400" size={18} />
+                    <span className="text-white font-medium">Groq / IA</span>
+                  </div>
+                  {credentials.ai ? (
+                    <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs rounded-full">Conectado</span>
+                  ) : (
+                    <span className="px-2 py-1 bg-red-900/50 text-red-400 text-xs rounded-full">No conectado</span>
+                  )}
+                </div>
+                {credentials.ai && (
+                  <div className="text-sm text-zinc-400 mb-3">
+                    <p>Provider: {credentials.ai.provider.toUpperCase()}</p>
+                    <p className="text-xs text-zinc-500">Key: {credentials.ai.keyPreview}</p>
+                  </div>
+                )}
+                {credentials.ai ? (
+                  showUnlinkConfirm === 'ai' ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleUnlink('ai')}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg"
+                      >
+                        Confirmar
+                      </button>
+                      <button
+                        onClick={() => setShowUnlinkConfirm(null)}
+                        className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-sm rounded-lg"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowUnlinkConfirm('ai')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/50 hover:bg-red-800/50 text-red-400 text-sm rounded-lg transition-colors"
+                    >
+                      <Unlink size={14} />
+                      Desvincular
+                    </button>
+                  )
                 ) : (
                   <button
-                    onClick={() => setShowUnlinkConfirm('ai')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/50 hover:bg-red-800/50 text-red-400 text-sm rounded-lg transition-colors"
+                    onClick={() => setShowAiModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                   >
-                    <Unlink size={14} />
-                    Desvincular
+                    <Key size={14} />
+                    Configurar
                   </button>
-                )
-              ) : (
-                <button
-                  onClick={() => setShowAiModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                >
-                  <Key size={14} />
-                  Configurar
-                </button>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 p-3 bg-amber-900/20 border border-amber-800/50 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="text-amber-400 flex-shrink-0" size={18} />
-              <p className="text-amber-200 text-sm">
-                <strong>Advertencia:</strong> Desvincular una API detendrá el funcionamiento del bot. Los usuarios perderán acceso hasta que vuelvas a conectar.
-              </p>
+          {!isPremium && (
+            <div className="mt-4 p-3 bg-amber-900/20 border border-amber-800/50 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="text-amber-400 flex-shrink-0" size={18} />
+                <p className="text-amber-200 text-sm">
+                  <strong>Advertencia:</strong> Desvincular una API detendrá el funcionamiento del bot. Los usuarios perderán acceso hasta que vuelvas a conectar.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Bot Control Section */}
