@@ -9,8 +9,11 @@ const logger = require('../utils/logger');
  * @returns {Promise<{ allowed: boolean, remaining: number, resetTime: Date, used: number }>}
  */
 const checkDailyLimit = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       plan: true,
       daily_message_count: true,
@@ -42,7 +45,7 @@ const checkDailyLimit = async (userId) => {
 
   // Reset if 24 hours have passed
   if (hoursSinceReset >= 24 || !user.last_reset_date) {
-    await resetDailyCount(userId);
+    await resetDailyCount(userIdInt);
     return {
       allowed: true,
       remaining: limit,
@@ -74,8 +77,11 @@ const checkDailyLimit = async (userId) => {
  * @returns {Promise<void>}
  */
 const incrementDailyCount = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: { plan: true, daily_message_count: true }
   });
 
@@ -87,11 +93,11 @@ const incrementDailyCount = async (userId) => {
   const newCount = (user.daily_message_count || 0) + 1;
 
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { daily_message_count: newCount }
   });
 
-  logger.debug(`Daily message count incremented for user ${userId}: ${newCount}`);
+  logger.debug(`Daily message count incremented for user ${userIdInt}: ${newCount}`);
 };
 
 /**
@@ -100,15 +106,18 @@ const incrementDailyCount = async (userId) => {
  * @returns {Promise<void>}
  */
 const resetDailyCount = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: {
       daily_message_count: 0,
       last_reset_date: new Date()
     }
   });
 
-  logger.info(`Daily message count reset for user ${userId}`);
+  logger.info(`Daily message count reset for user ${userIdInt}`);
 };
 
 /**
@@ -158,7 +167,10 @@ const getDailyLimitForPlan = (plan) => {
  * @throws {RateLimitError} If limit exceeded
  */
 const enforceDailyLimit = async (userId) => {
-  const status = await checkDailyLimit(userId);
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
+  const status = await checkDailyLimit(userIdInt);
 
   if (!status.allowed) {
     throw new RateLimitError(
