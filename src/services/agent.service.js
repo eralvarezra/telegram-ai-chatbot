@@ -75,9 +75,12 @@ const DEFAULT_AGENT_CONFIG = {
  * @returns {Promise<object>} - Created agent
  */
 const createAgent = async (userId, config = {}) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   // Check if user is premium
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: { plan: true }
   });
 
@@ -87,16 +90,16 @@ const createAgent = async (userId, config = {}) => {
 
   // Check if agent already exists
   const existing = await prisma.agent.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   });
 
   if (existing) {
-    logger.info(`Agent already exists for user ${userId}`);
+    logger.info(`Agent already exists for user ${userIdInt}`);
     return existing;
   }
 
   const agentData = {
-    user_id: userId,
+    user_id: userIdInt,
     name: config.name || DEFAULT_AGENT_CONFIG.name,
     tone: config.tone || DEFAULT_AGENT_CONFIG.tone,
     response_style: config.response_style || DEFAULT_AGENT_CONFIG.response_style,
@@ -118,7 +121,7 @@ const createAgent = async (userId, config = {}) => {
     data: agentData
   });
 
-  logger.info(`Created agent for user ${userId}: ${agent.name}`);
+  logger.info(`Created agent for user ${userIdInt}: ${agent.name}`);
   return agent;
 };
 
@@ -128,8 +131,11 @@ const createAgent = async (userId, config = {}) => {
  * @returns {Promise<object|null>} - Agent or null
  */
 const getAgent = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   return prisma.agent.findUnique({
-    where: { user_id: userId },
+    where: { user_id: userIdInt },
     include: {
       conversations: {
         orderBy: { last_message_at: 'desc' },
@@ -146,8 +152,11 @@ const getAgent = async (userId) => {
  * @returns {Promise<object>} - Updated agent
  */
 const updateAgent = async (userId, updates) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const agent = await prisma.agent.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   });
 
   if (!agent) {
@@ -167,11 +176,11 @@ const updateAgent = async (userId, updates) => {
   }
 
   const updated = await prisma.agent.update({
-    where: { user_id: userId },
+    where: { user_id: userIdInt },
     data: updateData
   });
 
-  logger.info(`Updated agent for user ${userId}`);
+  logger.info(`Updated agent for user ${userIdInt}`);
   return updated;
 };
 
@@ -181,13 +190,16 @@ const updateAgent = async (userId, updates) => {
  * @returns {Promise<void>}
  */
 const deleteAgent = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   await prisma.agent.delete({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   }).catch(err => {
     if (err.code !== 'P2025') throw err; // Not found is ok
   });
 
-  logger.info(`Deleted agent for user ${userId}`);
+  logger.info(`Deleted agent for user ${userIdInt}`);
 };
 
 /**
@@ -302,9 +314,12 @@ const getEngagementPrompt = (level) => {
  * @returns {Promise<object|null>} - Agent or null (for free users)
  */
 const getAgentForUser = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   // Check user plan first
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: { plan: true }
   });
 
@@ -314,12 +329,12 @@ const getAgentForUser = async (userId) => {
 
   // Get or create agent
   let agent = await prisma.agent.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   });
 
   if (!agent) {
     // Auto-create agent for premium users
-    agent = await createAgent(userId);
+    agent = await createAgent(userIdInt);
   }
 
   return agent;
