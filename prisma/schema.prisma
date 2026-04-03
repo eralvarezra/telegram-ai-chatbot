@@ -25,6 +25,7 @@ model User {
   messages        Message[]
   payments        Payment[]
   media_views     MediaView[]
+  conversation_memories ConversationMemory[]
 
   @@index([telegram_id])
   @@index([bot_instance_id])
@@ -223,6 +224,7 @@ model AdminUser {
   invoices             Invoice[]
   blocked_users        BlockedUser[]
   usage_tracking       UsageTracking[]
+  agent                Agent?
 
   @@index([email])
   @@index([stripe_customer_id])
@@ -421,4 +423,102 @@ model UsageTracking {
   @@index([user_id])
   @@index([timestamp])
   @@index([user_id, timestamp])
+}
+
+// AI Agent for premium users
+model Agent {
+  id                  Int       @id @default(autoincrement())
+  user_id             Int       @unique  // One agent per user
+  name                String    @default("Assistant")
+
+  // Personality Configuration (JSON)
+  personality_config  Json?     // { traits: [], style: "", tone: "" }
+
+  // Generated system prompt (cached for performance)
+  system_prompt       String?   @db.Text
+
+  // Behavior Settings
+  tone                String    @default("playful")
+  response_style      String    @default("short")
+  engagement_level    Int       @default(3)
+  sales_strategy      String?   @db.Text
+  restrictions       String?   @db.Text
+
+  // Business Context
+  business_name       String?
+  business_type       String?   // "adult", "retail", "consulting", etc.
+  products_services   String?   @db.Text  // JSON array or text description
+
+  // Memory Settings
+  memory_enabled      Boolean   @default(true)
+  memory_summary      String?   @db.Text  // Compressed conversation summary
+
+  // Voice/Style Settings
+  language           String    @default("spanish")  // Primary language
+  greeting_style     String?   // Custom greeting template
+  farewell_style     String?   // Custom farewell template
+
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  user               AdminUser           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  conversations      ConversationMemory[]
+
+  @@index([user_id])
+}
+
+// Conversation memory per agent-contact pair
+model ConversationMemory {
+  id              Int       @id @default(autoincrement())
+  agent_id        Int
+  contact_id      Int       // Telegram user (User table)
+
+  // Conversation Context
+  context_summary  String?   @db.Text  // AI-generated summary
+  key_facts       Json?     // { "name": "Juan", "interests": ["photos"], "budget": "high" }
+
+  // Conversation state
+  last_topic      String?   // Last discussed topic
+  sentiment       String?   // "positive", "negative", "neutral"
+  intent          String?   // "purchase", "inquiry", "chat"
+
+  // Interaction tracking
+  last_message_at DateTime  @default(now())
+  message_count   Int       @default(0)
+  purchase_intent Float?    // 0.0 to 1.0 probability
+
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  agent           Agent     @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  contact         User      @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+
+  @@unique([agent_id, contact_id])  // One memory per agent-contact pair
+  @@index([agent_id])
+  @@index([contact_id])
+  @@index([last_message_at])
+}
+
+// Agent templates for quick setup
+model AgentTemplate {
+  id                  Int       @id @default(autoincrement())
+  name                String    @unique
+  description         String?
+  category            String    @default("general")  // "adult", "retail", "consulting", "support"
+
+  // Pre-configured personality
+  personality_config  Json
+  tone                String    @default("friendly")
+  response_style      String    @default("short")
+  engagement_level    Int       @default(3)
+
+  // Template settings
+  default_restrictions String?  @db.Text
+  suggested_products   String?  @db.Text
+
+  is_active           Boolean   @default(true)
+  created_at          DateTime  @default(now())
+
+  @@index([category])
+  @@index([is_active])
 }

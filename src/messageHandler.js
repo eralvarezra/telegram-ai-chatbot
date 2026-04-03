@@ -498,7 +498,7 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
 
         // Generate AI response and include menu redirect
         const history = await messageService.getConversationHistory(user.id, config.contextMessageLimit || 20);
-        let replyText = await aiService.generateReply(text, history, user.id, ownerId, false);
+        let replyText = await aiService.generateReply(text, history, user.id, ownerId, false, user.id);
 
         // Append a gentle redirect to the menu
         const redirectMessage = await servicesMenu.generateMenuRedirectMessage(botConfig, pendingState.services, ownerId);
@@ -645,7 +645,7 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
 
     // If no media sent, generate AI reply
     if (!mediaSent) {
-      const aiReplyText = await aiService.generateReply(text, history, user.id, ownerId, false);
+      const aiReplyText = await aiService.generateReply(text, history, user.id, ownerId, false, user.id);
       replyText = aiReplyText;
 
       const typingDelay = calculateTypingDelay(replyText);

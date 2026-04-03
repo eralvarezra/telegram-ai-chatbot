@@ -16,6 +16,8 @@ const paypalRoutes = require('./routes/paypal.routes');
 const blockedUsersRoutes = require('./routes/blockedUsers.routes');
 const productRoutes = require('./routes/product.routes');
 const apiKeyRoutes = require('./routes/apiKey.routes');
+const agentRoutes = require('./routes/agent.routes');
+const testRoutes = require('./routes/test.routes');
 const { errorHandler } = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
 const cors = require('cors');
@@ -30,6 +32,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Serve test pages
+app.use('/test', express.static(path.join(__dirname, '../public')));
 
 // Request logging (skip SSE and other frequent endpoints)
 app.use((req, res, next) => {
@@ -58,6 +63,8 @@ app.use('/api/paypal', paypalRoutes);
 app.use('/api/blocked-users', blockedUsersRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/api-key', apiKeyRoutes);
+app.use('/api/agent', agentRoutes);
+app.use('/api/test', testRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test - Registro de Usuario</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      max-width: 500px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .plan-selection {
+      margin-bottom: 24px;
+    }
+
+    .plan-selection label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .plan-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .plan-option {
+      position: relative;
+    }
+
+    .plan-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .plan-option label {
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .plan-option input[type="radio"]:checked + label {
+      border-color: #667eea;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    .plan-option input[type="radio"]:focus + label {
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .plan-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .plan-price {
+      font-size: 24px;
+      font-weight: 800;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+
+    .plan-features {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .premium .plan-name {
+      color: #9333ea;
+    }
+
+    .premium label {
+      border-color: #9333ea;
+    }
+
+    .premium input[type="radio"]:checked + label {
+      border-color: #9333ea;
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -10px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .result.success {
+      background: #d1fae5;
+      border: 1px solid #10b981;
+      color: #065f46;
+    }
+
+    .result.error {
+      background: #fee2e2;
+      border: 1px solid #ef4444;
+      color: #991b1b;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab:hover {
+      color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .user-info {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    .user-info h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .user-info pre {
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-free {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge-premium {
+      background: #f3e8ff;
+      color: #7c3aed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧪 Test - Sistema de Usuarios</h1>
+      <p>Página de prueba para registro con selección de plan</p>
+    </div>
+
+    <div class="content">
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('register')">Registro</button>
+        <button class="tab" onclick="showTab('login')">Login</button>
+        <button class="tab" onclick="showTab('verify')">Verificar Token</button>
+      </div>
+
+      <!-- Tab: Registro -->
+      <div id="register-tab" class="tab-content active">
+        <form id="register-form" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="name">Nombre</label>
+            <input type="text" id="name" placeholder="Tu nombre" value="Test User">
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="tu@email.com" value="test@example.com">
+          </div>
+
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••" value="password123">
+          </div>
+
+          <div class="plan-selection">
+            <label>Selecciona tu Plan</label>
+            <div class="plan-options">
+              <div class="plan-option">
+                <input type="radio" id="plan-free" name="plan" value="free" checked>
+                <label for="plan-free">
+                  <span class="plan-name">Free</span>
+                  <span class="plan-price">$0/mes</span>
+                  <span class="plan-features">
+                    ✅ Tu propia API key<br>
+                    ✅ 50 mensajes/día<br>
+                    ❌ Sin agente personalizado
+                  </span>
+                </label>
+              </div>
+              <div class="plan-option premium">
+                <input type="radio" id="plan-premium" name="plan" value="premium">
+                <label for="plan-premium">
+                  <span class="plan-name">Premium</span>
+                  <span class="plan-price">$29/mes</span>
+                  <span class="plan-features">
+                    ✅ API key incluida<br>
+                    ✅ Mensajes ilimitados<br>
+                    ✅ Agente personalizado<br>
+                    ✅ Memoria de conversaciones
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn" id="register-btn">
+            Crear Cuenta
+          </button>
+        </form>
+
+        <div id="register-result" class="result"></div>
+        <div id="register-user" class="user-info" style="display: none;">
+          <h3>📋 Usuario Creado</h3>
+          <pre id="user-data"></pre>
+        </div>
+      </div>
+
+      <!-- Tab: Login -->
+      <div id="login-tab" class="tab-content">
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="tu@email.com" value="test@example.com">
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" placeholder="••••••••" value="password123">
+          </div>
+
+          <button type="submit" class="btn" id="login-btn">
+            Iniciar Sesión
+          </button>
+        </form>
+
+        <div id="login-result" class="result"></div>
+      </div>
+
+      <!-- Tab: Verify -->
+      <div id="verify-tab" class="tab-content">
+        <div class="form-group">
+          <label for="token-input">Token JWT</label>
+          <input type="text" id="token-input" placeholder="Pega tu token aquí...">
+        </div>
+
+        <button class="btn" onclick="verifyToken()">
+          Verificar Token
+        </button>
+
+        <div id="verify-result" class="result"></div>
+        <div id="verify-user" class="user-info" style="display: none;">
+          <h3>📋 Usuario Verificado</h3>
+          <pre id="verify-data"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+
+    function showTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+
+      const btn = document.getElementById('register-btn');
+      const result = document.getElementById('register-result');
+      const userDiv = document.getElementById('register-user');
+      const userData = document.getElementById('user-data');
+
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const plan = document.querySelector('input[name="plan"]:checked').value;
+
+      btn.disabled = true;
+      btn.textContent = 'Creando cuenta...';
+      result.className = 'result';
+
+      try {
+        const response = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, plan })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          result.className = 'result success';
+          result.textContent = `✅ ${data.message} - Plan: ${plan.toUpperCase()}`;
+          userDiv.style.display = 'block';
+          userData.textContent = JSON.stringify(data.user, null, 2);
+
+          // Save token for later use
+          localStorage.setItem('test_token', data.token);
+        } else {
+          result.className = 'result error';
+          result.textContent = `❌ ${data.error}`;
+          userDiv.style.display = 'none';
+        }
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Error de conexión: ${error.message}`;
+        userDiv.style.display = 'none';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Crear Cuenta';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+
+      const btn = document.getElementById('login-btn');
+      const result = document.getElementById('login-result');
+
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      btn.disabled = true;
+      btn.textContent = 'Iniciando sesión...';
+      result.className = 'result';
+
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          result.className = 'result success';
+          result.textContent = `✅ ${data.message} - Plan: ${data.user?.plan || 'N/A'}`;
+
+          // Save token for later use
+          localStorage.setItem('test_token', data.token);
+        } else {
+          result.className = 'result error';
+          result.textContent = `❌ ${data.error}`;
+        }
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Error de conexión: ${error.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Iniciar Sesión';
+      }
+    }
+
+    async function verifyToken() {
+      const token = document.getElementById('token-input').value || localStorage.getItem('test_token');
+      const result = document.getElementById('verify-result');
+      const userDiv = document.getElementById('verify-user');
+      const userData = document.getElementById('verify-data');
+
+      if (!token) {
+        result.className = 'result error';
+        result.textContent = '❌ No hay token para verificar';
+        return;
+      }
+
+      result.className = 'result';
+      result.textContent = 'Verificando...';
+
+      try {
+        const response = await fetch(`${API_URL}/auth/verify`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.user) {
+          const planBadge = data.user.plan === 'premium'
+            ? '<span class="badge badge-premium">PREMIUM</span>'
+            : '<span class="badge badge-free">FREE</span>';
+
+          result.className = 'result success';
+          result.innerHTML = `✅ Token válido - Usuario: ${data.user.email} ${planBadge}`;
+          userDiv.style.display = 'block';
+          userData.textContent = JSON.stringify(data.user, null, 2);
+        } else {
+          result.className = 'result error';
+          result.textContent = `❌ ${data.error}`;
+          userDiv.style.display = 'none';
+        }
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Error de conexión: ${error.message}`;
+        userDiv.style.display = 'none';
+      }
+    }
+
+    // Load saved token on page load
+    window.onload = () => {
+      const savedToken = localStorage.getItem('test_token');
+      if (savedToken) {
+        document.getElementById('token-input').value = savedToken;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -77,11 +77,15 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, plan } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email y contraseña requeridos' });
     }
+
+    // Validate plan
+    const validPlans = ['free', 'premium'];
+    const userPlan = validPlans.includes(plan) ? plan : 'free';
 
     // Check if user already exists
     const existingUser = await authService.findUserByEmail(email);
@@ -90,7 +94,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Create user
-    const user = await authService.createUser(email, password, name);
+    const user = await authService.createUser(email, password, name, userPlan);
 
     const token = authService.generateToken(user);
 
@@ -104,6 +108,7 @@ router.post('/register', async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        plan: user.plan,
         onboarding_completed: false
       }
     });
@@ -251,7 +256,15 @@ router.get('/verify', async (req, res) => {
     // Get fresh user data
     const user = await prisma.adminUser.findUnique({
       where: { id: decoded.id },
-      select: { id: true, email: true, name: true, picture: true, role: true, onboarding_completed: true }
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        picture: true,
+        role: true,
+        plan: true,
+        onboarding_completed: true
+      }
     });
 
     if (user) {

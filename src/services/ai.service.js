@@ -5,6 +5,8 @@ const userCredentialsService = require('./userCredentials.service');
 const toneService = require('./tone.service');
 const apiKeyService = require('./apiKey.service');
 const usageTrackingService = require('./usageTracking.service');
+const agentService = require('./agent.service');
+const agentMemoryService = require('./agentMemory.service');
 const { ExternalServiceError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
@@ -197,9 +199,9 @@ const generateSystemPrompt = (botConfig, conversationContext = null, detectedTon
 };
 
 /**
- * Generate AI reply
+ * Generate AI reply with agent support
  */
-const generateReply = async (userMessage, messageHistory = [], userId = null, ownerId = null, isSendingMedia = false) => {
+const generateReply = async (userMessage, messageHistory = [], userId = null, ownerId = null, isSendingMedia = false, contactId = null) => {
   // Determine which user's API key to use
   const effectiveUserId = ownerId || userId;
   let apiKey, provider, keyType;
@@ -238,10 +240,26 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
     keyType = 'legacy';
   }
 
+  // Check if user has a custom agent (premium feature)
+  let agent = null;
+  let memoryContext = null;
+
+  try {
+    agent = await agentService.getAgentForUser(effectiveUserId);
+
+    if (agent && contactId) {
+      // Get conversation memory for this contact
+      memoryContext = await agentMemoryService.getMemoryContext(agent.id, contactId);
+    }
+  } catch (agentError) {
+    logger.debug('Agent lookup failed, using default config:', agentError.message);
+  }
+
+  // Get bot config (used for free users or as fallback)
   const botConfig = await configService.getConfig();
 
   // Analyze conversation context
-  const recentHistory = messageHistory.slice(-6); // Reduced from 20 to 6
+  const recentHistory = messageHistory.slice(-6);
   const conversationContext = analyzeConversation(recentHistory);
 
   logger.debug(`Conversation: isNew=${conversationContext.isNewConversation}, lang=${conversationContext.primaryLanguage}`);
@@ -252,7 +270,7 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
   // Get gender mode
   const userGenderMode = botConfig.user_gender_mode || 'auto';
 
-  logger.info(`Tone: ${detectedTone}, Gender: ${userGenderMode}`);
+  logger.info(`Tone: ${detectedTone}, Gender: ${userGenderMode}, HasAgent: ${!!agent}`);
 
   // Update user's last tone
   if (userId) {
@@ -260,6 +278,7 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
     await userService.updateUserTone(userId, detectedTone);
   }
 
+  // Build context messages
   let contextMessages = [];
   if (messageHistory.length > 0) {
     contextMessages = messageHistory.map(msg => ({
@@ -268,13 +287,31 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
     }));
   }
 
-  const systemPrompt = generateSystemPrompt(botConfig, conversationContext, detectedTone, userGenderMode, isSendingMedia);
+  // Generate system prompt based on whether user has agent
+  let systemPrompt;
+  if (agent) {
+    // Use agent's custom configuration with memory context
+    systemPrompt = agentService.generateSystemPrompt(agent, {
+      memoryContext,
+      keyFacts: memoryContext?.key_facts
+    });
+    logger.debug('Using agent system prompt');
+  } else {
+    // Use global config for free users
+    systemPrompt = generateSystemPrompt(botConfig, conversationContext, detectedTone, userGenderMode, isSendingMedia);
+    logger.debug('Using global bot config');
+  }
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...contextMessages.slice(-6), // Reduced from 15 to 6
+    ...contextMessages.slice(-6),
     { role: 'user', content: userMessage }
   ];
+
+  // Determine max tokens based on response style
+  const maxTokens = agent
+    ? (agent.response_style === 'short' ? 60 : agent.response_style === 'long' ? 150 : 100)
+    : (botConfig.response_style === 'short' ? 60 : 100);
 
   const client = new OpenAI({
     apiKey: apiKey,
@@ -287,7 +324,7 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
     const completion = await client.chat.completions.create({
       model: provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
       messages,
-      max_tokens: botConfig.response_style === 'short' ? 60 : 100, // Reduced from 150/250
+      max_tokens: maxTokens,
       temperature: 0.9
     });
 
@@ -304,6 +341,15 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
     if (effectiveUserId && tokensIn + tokensOut > 0) {
       usageTrackingService.recordTokenUsage(effectiveUserId, tokensIn, tokensOut, provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini', keyType).catch(err => {
         logger.debug('Failed to track token usage:', err.message);
+      });
+    }
+
+    // Update conversation memory if agent exists
+    if (agent && contactId) {
+      agentMemoryService.updateAfterMessage(agent.id, contactId, userMessage, reply, {
+        sentiment: detectedTone
+      }).catch(err => {
+        logger.debug('Failed to update memory:', err.message);
       });
     }
 

@@ -41,7 +41,7 @@ const hashPassword = (password) => {
 /**
  * Find or create user from Google OAuth
  */
-const findOrCreateGoogleUser = async (googleUser) => {
+const findOrCreateGoogleUser = async (googleUser, plan = 'free') => {
   const { email, name, picture, sub: googleId } = googleUser;
 
   let user = await prisma.adminUser.findUnique({
@@ -62,6 +62,10 @@ const findOrCreateGoogleUser = async (googleUser) => {
     return { user, isNew: false };
   }
 
+  // Validate plan
+  const validPlans = ['free', 'premium'];
+  const userPlan = validPlans.includes(plan) ? plan : 'free';
+
   // Create new user
   user = await prisma.adminUser.create({
     data: {
@@ -70,6 +74,7 @@ const findOrCreateGoogleUser = async (googleUser) => {
       picture,
       google_id: googleId,
       role: 'admin',
+      plan: userPlan,
       onboarding_completed: false,
       last_login: new Date()
     }
@@ -90,8 +95,12 @@ const findUserByEmail = async (email) => {
 /**
  * Create user with email and password
  */
-const createUser = async (email, password, name) => {
+const createUser = async (email, password, name, plan = 'free') => {
   const hashedPassword = hashPassword(password);
+
+  // Validate plan
+  const validPlans = ['free', 'premium'];
+  const userPlan = validPlans.includes(plan) ? plan : 'free';
 
   return prisma.adminUser.create({
     data: {
@@ -99,6 +108,7 @@ const createUser = async (email, password, name) => {
       name: name || email.split('@')[0],
       password_hash: hashedPassword,
       role: 'admin',
+      plan: userPlan,
       onboarding_completed: false
     }
   });
