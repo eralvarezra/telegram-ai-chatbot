@@ -333,22 +333,34 @@ const getSubscription = async (userId) => {
   // Ensure userId is an integer
   const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
 
+  // Get user to check their plan
+  const user = await prisma.adminUser.findUnique({
+    where: { id: userIdInt },
+    select: { plan: true }
+  });
+
+  // Check for Stripe subscription
   const subscription = await prisma.subscription.findUnique({
     where: { user_id: userIdInt }
   });
 
-  if (!subscription) {
-    // Return free plan by default
-    return {
-      plan: 'free',
-      status: 'active',
-      limits: PLANS.free.limits
-    };
+  // Determine plan from user record or subscription
+  // User.plan can be 'free' or 'premium'
+  // Subscription.plan can be 'free', 'pro', or 'scale'
+  let plan = 'free';
+
+  if (user?.plan === 'premium') {
+    // Premium users get pro features
+    plan = 'pro';
+  } else if (subscription?.plan) {
+    plan = subscription.plan;
   }
 
   return {
-    ...subscription,
-    limits: PLANS[subscription.plan]?.limits || PLANS.free.limits
+    plan,
+    status: subscription?.status || 'active',
+    current_period_end: subscription?.current_period_end || null,
+    limits: PLANS[plan]?.limits || PLANS.free.limits
   };
 };
 
