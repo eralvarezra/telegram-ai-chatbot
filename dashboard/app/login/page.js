@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [plan, setPlan] = useState('free'); // 'free' | 'premium'
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -115,7 +116,7 @@ export default function LoginPage() {
     if (mode === 'login') {
       result = await loginWithEmail(email, password);
     } else if (mode === 'register') {
-      result = await register(email, password, name);
+      result = await register(email, password, name, plan);
     }
 
     if (result.success) {
@@ -225,6 +226,104 @@ export default function LoginPage() {
             error={errors.password}
           />
 
+          {/* Plan Selection (register mode only) */}
+          {mode === 'register' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3"
+            >
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
+                Selecciona tu plan
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Free Plan */}
+                <button
+                  type="button"
+                  onClick={() => setPlan('free')}
+                  className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+                    plan === 'free'
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-white">Free</span>
+                    {plan === 'free' && (
+                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-1">$0<span className="text-sm font-normal text-zinc-400">/mes</span></div>
+                  <ul className="text-xs text-zinc-400 space-y-1">
+                    <li className="flex items-center gap-1">
+                      <span className="text-yellow-500">⚠️</span>
+                      Tu propia API key
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="text-blue-500">✓</span>
+                      50 mensajes/día
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="text-zinc-500">✗</span>
+                      Sin agente personalizado
+                    </li>
+                  </ul>
+                </button>
+
+                {/* Premium Plan */}
+                <button
+                  type="button"
+                  onClick={() => setPlan('premium')}
+                  className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+                    plan === 'premium'
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                  }`}
+                >
+                  <div className="absolute -top-2 -right-2">
+                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      POPULAR
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-white">Premium</span>
+                    {plan === 'premium' && (
+                      <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-1">$29<span className="text-sm font-normal text-zinc-400">/mes</span></div>
+                  <ul className="text-xs text-zinc-400 space-y-1">
+                    <li className="flex items-center gap-1">
+                      <span className="text-green-500">✓</span>
+                      API key incluida
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="text-green-500">✓</span>
+                      Mensajes ilimitados
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="text-green-500">✓</span>
+                      Agente personalizado
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="text-green-500">✓</span>
+                      Memoria de conversaciones
+                    </li>
+                  </ul>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Forgot password (login mode only) */}
           {mode === 'login' && (
             <motion.div
@@ -258,7 +357,11 @@ export default function LoginPage() {
             disabled={loading}
             whileHover={{ scale: loading ? 1 : 1.01 }}
             whileTap={{ scale: loading ? 1 : 0.99 }}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
+            className={`w-full text-white font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
+              mode === 'register' && plan === 'premium'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-600 shadow-purple-500/25'
+                : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 shadow-blue-500/25'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading ? (
               <>
