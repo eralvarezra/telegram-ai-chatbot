@@ -21,6 +21,7 @@ const getProfile = async (userId) => {
       username: true,
       picture: true,
       role: true,
+      plan: true,
       created_at: true,
       last_login: true,
       two_factor_enabled: true,

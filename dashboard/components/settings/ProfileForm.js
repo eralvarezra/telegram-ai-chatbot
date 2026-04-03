@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Upload, User, Mail, AtSign, Camera, Check, AlertCircle } from 'lucide-react';
+import { Save, Upload, User, Mail, AtSign, Camera, Check, AlertCircle, Crown, Sparkles } from 'lucide-react';
 
 const API_URL = 'http://localhost:3000';
 
@@ -187,6 +187,55 @@ export default function ProfileForm({ user, onUpdate }) {
               JPG, PNG o GIF
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Plan Section */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Plan Actual</h2>
+
+        <div className="flex items-center gap-4">
+          {user?.plan === 'premium' ? (
+            <>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                <Crown size={24} className="text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-semibold">Premium</span>
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full font-medium">
+                    Activo
+                  </span>
+                </div>
+                <p className="text-zinc-400 text-sm mt-1">
+                  Acceso completo a todas las funciones
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center">
+                <Sparkles size={24} className="text-zinc-400" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-semibold">Gratis</span>
+                  <span className="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-xs rounded-full font-medium">
+                    Básico
+                  </span>
+                </div>
+                <p className="text-zinc-400 text-sm mt-1">
+                  Límite de 50 mensajes diarios
+                </p>
+              </div>
+              <a
+                href="/settings/account?tab=billing"
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium rounded-xl transition-all"
+              >
+                Mejorar a Premium
+              </a>
+            </>
+          )}
         </div>
       </div>
 
