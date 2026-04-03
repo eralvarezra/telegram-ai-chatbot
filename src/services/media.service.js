@@ -398,8 +398,19 @@ const getBulkMedia = async (ownerUserId = null, userId = null, limit = 5) => {
  */
 const recordMediaView = async (userId, mediaId, ownerUserId = null) => {
   try {
-    await prisma.mediaView.create({
-      data: {
+    // Use upsert to handle existing views
+    await prisma.mediaView.upsert({
+      where: {
+        user_id_media_id: {
+          user_id: parseInt(userId),
+          media_id: parseInt(mediaId)
+        }
+      },
+      update: {
+        viewed_at: new Date(),
+        owner_user_id: ownerUserId ? parseInt(ownerUserId) : null
+      },
+      create: {
         user_id: parseInt(userId),
         media_id: parseInt(mediaId),
         owner_user_id: ownerUserId ? parseInt(ownerUserId) : null
@@ -414,10 +425,7 @@ const recordMediaView = async (userId, mediaId, ownerUserId = null) => {
 
     logger.debug(`Recorded view: user ${userId} viewed media ${mediaId}`);
   } catch (error) {
-    // Unique constraint violation means already viewed - that's fine
-    if (error.code !== 'P2002') {
-      logger.error('Error recording media view:', error);
-    }
+    logger.error('Error recording media view:', error);
   }
 };
 
