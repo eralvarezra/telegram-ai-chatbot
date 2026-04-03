@@ -343,19 +343,32 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             }
 
             // After sending media, check description
-            if (hasDescription) {
-              // Has description + media: send description
-              await sleep(500);
-              if (entity) {
-                await client.sendMessage(entity, { message: selectedService.description });
-              } else {
-                await event.message.reply({ message: selectedService.description });
+            // Get payment methods to include
+            let paymentInfoMessage = '';
+            try {
+              const paymentInfo = await paymentFlowService.getPaymentInfoResponse();
+              if (paymentInfo) {
+                paymentInfoMessage = '\n\n' + paymentInfo;
               }
-              await messageService.saveMessage(user.id, 'assistant', selectedService.description);
-            } else {
-              // Only media, no description: generate brief AI follow-up
+            } catch (error) {
+              logger.debug('Could not get payment info:', error.message);
+            }
+
+            if (hasDescription) {
+              // Has description + media: send description with payment info
               await sleep(500);
-              const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
+              const fullMessage = selectedService.description + paymentInfoMessage;
+              if (entity) {
+                await client.sendMessage(entity, { message: fullMessage });
+              } else {
+                await event.message.reply({ message: fullMessage });
+              }
+              await messageService.saveMessage(user.id, 'assistant', fullMessage);
+            } else {
+              // Only media, no description: generate brief AI follow-up with payment info
+              await sleep(500);
+              let askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
+              askMessage += paymentInfoMessage;
               if (entity) {
                 await client.sendMessage(entity, { message: askMessage });
               } else {
@@ -365,18 +378,31 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             }
           } else {
             // No media found (but product has hasMedia flag)
-            if (hasDescription) {
-              // Only description, no media: send just description
-              await sleep(500);
-              if (entity) {
-                await client.sendMessage(entity, { message: selectedService.description });
-              } else {
-                await event.message.reply({ message: selectedService.description });
+            // Get payment methods
+            let paymentInfoMessage = '';
+            try {
+              const paymentInfo = await paymentFlowService.getPaymentInfoResponse();
+              if (paymentInfo) {
+                paymentInfoMessage = '\n\n' + paymentInfo;
               }
-              await messageService.saveMessage(user.id, 'assistant', selectedService.description);
+            } catch (error) {
+              logger.debug('Could not get payment info:', error.message);
+            }
+
+            if (hasDescription) {
+              // Only description, no media: send just description with payment info
+              await sleep(500);
+              const fullMessage = selectedService.description + paymentInfoMessage;
+              if (entity) {
+                await client.sendMessage(entity, { message: fullMessage });
+              } else {
+                await event.message.reply({ message: fullMessage });
+              }
+              await messageService.saveMessage(user.id, 'assistant', fullMessage);
             } else {
-              // No media and no description: generate default message
-              const defaultMessage = `¡Esa es una excelente elección! 💕 En breve te envío los detalles de ${selectedService.name}.`;
+              // No media and no description: generate default message with payment info
+              let defaultMessage = `¡Esa es una excelente elección! 💕 En breve te envío los detalles de ${selectedService.name}.`;
+              defaultMessage += paymentInfoMessage;
               if (entity) {
                 await client.sendMessage(entity, { message: defaultMessage });
               } else {
@@ -387,17 +413,30 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
           }
         } else {
           // Service has no media flag
-          if (hasDescription) {
-            // Only description, no media: send just description
-            if (entity) {
-              await client.sendMessage(entity, { message: selectedService.description });
-            } else {
-              await event.message.reply({ message: selectedService.description });
+          // Get payment methods
+          let paymentInfoMessage = '';
+          try {
+            const paymentInfo = await paymentFlowService.getPaymentInfoResponse();
+            if (paymentInfo) {
+              paymentInfoMessage = '\n\n' + paymentInfo;
             }
-            await messageService.saveMessage(user.id, 'assistant', selectedService.description);
+          } catch (error) {
+            logger.debug('Could not get payment info:', error.message);
+          }
+
+          if (hasDescription) {
+            // Only description, no media: send just description with payment info
+            const fullMessage = selectedService.description + paymentInfoMessage;
+            if (entity) {
+              await client.sendMessage(entity, { message: fullMessage });
+            } else {
+              await event.message.reply({ message: fullMessage });
+            }
+            await messageService.saveMessage(user.id, 'assistant', fullMessage);
           } else {
-            // No media and no description: generate AI confirmation
-            const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(selectedService, botConfig, ownerId);
+            // No media and no description: generate AI confirmation with payment info
+            let confirmMessage = await servicesMenu.generateServiceConfirmationMessage(selectedService, botConfig, ownerId);
+            confirmMessage += paymentInfoMessage;
             if (entity) {
               await client.sendMessage(entity, { message: confirmMessage });
             } else {
@@ -674,18 +713,31 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
         // Decide follow-up message
         const hasDescription = directServiceMatch.description && directServiceMatch.description.trim().length > 0;
 
+        // Get payment methods to include with media
+        let paymentInfoMessage = '';
+        try {
+          const paymentInfo = await paymentFlowService.getPaymentInfoResponse();
+          if (paymentInfo) {
+            paymentInfoMessage = '\n\n' + paymentInfo;
+          }
+        } catch (error) {
+          logger.debug('Could not get payment info:', error.message);
+        }
+
         if (hasDescription) {
           await sleep(500);
+          const fullMessage = directServiceMatch.description + paymentInfoMessage;
           if (entity) {
-            await client.sendMessage(entity, { message: directServiceMatch.description });
+            await client.sendMessage(entity, { message: fullMessage });
           } else {
-            await event.message.reply({ message: directServiceMatch.description });
+            await event.message.reply({ message: fullMessage });
           }
-          await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
+          await messageService.saveMessage(user.id, 'assistant', fullMessage);
         } else if (itemsToSend.length === 1) {
-          // Single item sent - simple confirmation
+          // Single item sent - confirmation with payment info
           await sleep(500);
-          const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+          let confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+          confirmMessage += paymentInfoMessage;
           if (entity) {
             await client.sendMessage(entity, { message: confirmMessage });
           } else {
@@ -695,7 +747,8 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
         } else if (shouldAskPreference && allProductMedia.length > 3) {
           // Multiple items and there are more to show - ask preference
           await sleep(500);
-          const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
+          let askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
+          askMessage += paymentInfoMessage;
           if (entity) {
             await client.sendMessage(entity, { message: askMessage });
           } else {
@@ -703,9 +756,10 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
           }
           await messageService.saveMessage(user.id, 'assistant', askMessage);
         } else {
-          // Sent 2-3 items, no more to show - simple confirmation
+          // Sent 2-3 items, no more to show - simple confirmation with payment info
           await sleep(500);
-          const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+          let confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+          confirmMessage += paymentInfoMessage;
           if (entity) {
             await client.sendMessage(entity, { message: confirmMessage });
           } else {
@@ -839,6 +893,22 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
           logger.info(`Media sent successfully: ${matchedMedia.title}`);
           mediaSent = true;
           replyText = caption;
+
+          // Send payment methods after media
+          await sleep(500);
+          try {
+            const paymentInfo = await paymentFlowService.getPaymentInfoResponse();
+            if (paymentInfo) {
+              if (entity) {
+                await client.sendMessage(entity, { message: paymentInfo });
+              } else {
+                await event.message.reply({ message: paymentInfo });
+              }
+              replyText += '\n\n' + paymentInfo;
+            }
+          } catch (paymentError) {
+            logger.debug('Could not send payment info:', paymentError.message);
+          }
         } else {
           logger.error(`File not found: ${filePath}`);
         }
