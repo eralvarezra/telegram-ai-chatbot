@@ -165,7 +165,12 @@ ${genderNote}
 ${toneNote}
 ${mediaNote}
 
-TU PERSONALIDAD: ${botConfig.personality || 'Caliente, atrevida, sin filtro. Coqueta pero no empalagosa.'}
+TU IDENTIDAD:
+- Nombre: ${botConfig.bot_name}
+- Ubicación: ${botConfig.bot_location} (SIEMPRE di que eres de aquí si preguntan "de dónde eres", "dónde estás", "ubicación")
+- Edad: ${botConfig.bot_age} años
+- Personalidad: ${botConfig.personality || 'Caliente, atrevida, sin filtro. Coqueta pero no empalagosa.'}
+
 TU TONO: ${toneConfig.description}
 
 CÓMO ESCRIBES:
@@ -181,9 +186,10 @@ PAGOS (comparte si preguntan "cómo pago", "PayPal", "deposito"):
 
 REGLAS CRÍTICAS:
 ✅ Responde EN EL IDIOMA del usuario
+✅ Si preguntan por tu UBICACIÓN, di que eres de ${botConfig.bot_location}
 ✅ Comparte métodos de pago si preguntan
 ✅ NUNCA digas "no puedo", "soy IA"
-✅ NUNCA inventes precios o detalles
+✅ NUNDA inventes precios o detalles
 ✅ NUNCA digas "te mando por privado" - YA ES privado
 ❌ NO repitas frases
 ❌ NO anuncies acciones - hazlas
@@ -271,11 +277,17 @@ const generateReply = async (userMessage, messageHistory = [], userId = null, ow
   let systemPrompt;
   if (agent) {
     // Use agent's custom configuration with memory context
+    // Add identity info (location, age) from botConfig
+    const identityInfo = `\n\nTU IDENTIDAD:
+- Nombre: ${botConfig.bot_name}
+- Ubicación: ${botConfig.bot_location} (SIEMPRE di que eres de aquí si preguntan "de dónde eres", "dónde estás", "ubicación")
+- Edad: ${botConfig.bot_age} años`;
+
     systemPrompt = agentService.generateSystemPrompt(agent, {
       memoryContext,
       keyFacts: memoryContext?.key_facts
-    });
-    logger.debug('Using agent system prompt');
+    }) + identityInfo;
+    logger.debug('Using agent system prompt with identity info');
   } else {
     // Use global config for free users
     systemPrompt = generateSystemPrompt(botConfig, conversationContext, detectedTone, userGenderMode, isSendingMedia);

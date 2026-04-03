@@ -94,13 +94,14 @@ router.post('/generate-personality', async (req, res) => {
     }
 
     // Get API key for AI generation - try multiple sources
-    let apiKey, provider;
+    let apiKey, provider, keySource;
 
     // First try: get from user's plan (premium users use platform key)
     try {
       const keyInfo = await apiKeyService.getApiKeyForUser(userId);
       apiKey = keyInfo.apiKey;
       provider = keyInfo.provider;
+      keySource = keyInfo.keyType;
       logger.debug(`Got API key for user ${userId}: ${keyInfo.keyType}`);
     } catch (userKeyError) {
       logger.debug('User key error, trying fallbacks:', userKeyError.message);
@@ -108,6 +109,7 @@ router.post('/generate-personality', async (req, res) => {
       // Second try: environment variables
       apiKey = process.env.PLATFORM_GROQ_KEY || process.env.AI_API_KEY;
       provider = 'groq';
+      keySource = 'env';
 
       // Third try: legacy setup service
       if (!apiKey) {
@@ -115,6 +117,7 @@ router.post('/generate-personality', async (req, res) => {
         if (setupCreds) {
           apiKey = setupCreds.apiKey;
           provider = setupCreds.provider || 'groq';
+          keySource = 'setup';
         }
       }
     }
@@ -124,7 +127,7 @@ router.post('/generate-personality', async (req, res) => {
     }
 
     logger.info(`Using API key for generation: ${apiKey ? apiKey.substring(0, 10) + '...' : 'none'}`);
-    logger.info(`Key source: ${keyInfo?.keyType || 'env/platform'}`);
+    logger.info(`Key source: ${keySource}`);
 
     // Generate personality configuration using AI
     const prompt = `You are helping configure a Telegram bot for a business. Based on the following information, generate a complete bot configuration in JSON format.

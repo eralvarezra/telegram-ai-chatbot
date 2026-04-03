@@ -22,7 +22,7 @@ const path = require('path');
 // Message buffer for grouping consecutive messages
 // Structure: Map<telegramId, { messages: [], timeout: Timeout, userData: {} }>
 const messageBuffer = new Map();
-const BUFFER_WAIT_TIME = 3000; // Wait 3 seconds for more messages
+const BUFFER_WAIT_TIME = 10000; // Wait 10 seconds for more messages
 
 // Simulate realistic typing delay
 const calculateTypingDelay = (text) => {
