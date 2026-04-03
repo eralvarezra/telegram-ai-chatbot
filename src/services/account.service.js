@@ -9,8 +9,11 @@ const SALT_ROUNDS = 12;
  * Get user profile
  */
 const getProfile = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       id: true,
       email: true,
@@ -42,6 +45,9 @@ const getProfile = async (userId) => {
  * Update user profile
  */
 const updateProfile = async (userId, data) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const { name, username, picture } = data;
 
   const updateData = {};
@@ -52,7 +58,7 @@ const updateProfile = async (userId, data) => {
       const existing = await prisma.adminUser.findFirst({
         where: {
           username: username,
-          NOT: { id: userId }
+          NOT: { id: userIdInt }
         }
       });
 
@@ -65,7 +71,7 @@ const updateProfile = async (userId, data) => {
   if (picture !== undefined) updateData.picture = picture;
 
   const user = await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: updateData,
     select: {
       id: true,
@@ -77,7 +83,7 @@ const updateProfile = async (userId, data) => {
     }
   });
 
-  logger.info(`Profile updated for user ${userId}`);
+  logger.info(`Profile updated for user ${userIdInt}`);
   return user;
 };
 
@@ -85,8 +91,11 @@ const updateProfile = async (userId, data) => {
  * Change password
  */
 const changePassword = async (userId, currentPassword, newPassword) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId }
+    where: { id: userIdInt }
   });
 
   if (!user) {
@@ -105,14 +114,14 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { password_hash: hashedPassword }
   });
 
   // Invalidate all sessions except current
-  await invalidateOtherSessions(userId);
+  await invalidateOtherSessions(userIdInt);
 
-  logger.info(`Password changed for user ${userId}`);
+  logger.info(`Password changed for user ${userIdInt}`);
   return true;
 };
 
@@ -120,10 +129,13 @@ const changePassword = async (userId, currentPassword, newPassword) => {
  * Enable 2FA - generates secret
  */
 const enable2FA = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const secret = crypto.randomBytes(20).toString('base64');
 
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: {
       two_factor_enabled: true,
       two_factor_secret: secret
@@ -137,15 +149,18 @@ const enable2FA = async (userId) => {
  * Disable 2FA
  */
 const disable2FA = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: {
       two_factor_enabled: false,
       two_factor_secret: null
     }
   });
 
-  logger.info(`2FA disabled for user ${userId}`);
+  logger.info(`2FA disabled for user ${userIdInt}`);
   return true;
 };
 
@@ -153,9 +168,12 @@ const disable2FA = async (userId) => {
  * Get active sessions
  */
 const getSessions = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const sessions = await prisma.userSession.findMany({
     where: {
-      user_id: userId,
+      user_id: userIdInt,
       expires_at: { gt: new Date() }
     },
     orderBy: { last_active: 'desc' },
@@ -175,41 +193,50 @@ const getSessions = async (userId) => {
  * Invalidate other sessions
  */
 const invalidateOtherSessions = async (userId, currentTokenHash = null) => {
-  const where = { user_id: userId };
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
+  const where = { user_id: userIdInt };
 
   if (currentTokenHash) {
     where.NOT = { token_hash: currentTokenHash };
   }
 
   await prisma.userSession.deleteMany({ where });
-  logger.info(`Sessions invalidated for user ${userId}`);
+  logger.info(`Sessions invalidated for user ${userIdInt}`);
 };
 
 /**
  * Invalidate a specific session
  */
 const invalidateSession = async (userId, sessionId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   await prisma.userSession.deleteMany({
     where: {
       id: sessionId,
-      user_id: userId
+      user_id: userIdInt
     }
   });
 
-  logger.info(`Session ${sessionId} invalidated for user ${userId}`);
+  logger.info(`Session ${sessionId} invalidated for user ${userIdInt}`);
 };
 
 /**
  * Create session (for login)
  */
 const createSession = async (userId, token, deviceInfo = null, ipAddress = null) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
 
   await prisma.userSession.create({
     data: {
-      user_id: userId,
+      user_id: userIdInt,
       token_hash: tokenHash,
       device_info: deviceInfo,
       ip_address: ipAddress,
@@ -219,7 +246,7 @@ const createSession = async (userId, token, deviceInfo = null, ipAddress = null)
 
   // Update last login
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { last_login: new Date() }
   });
 };
@@ -267,18 +294,21 @@ const validateSession = async (token) => {
  * Delete account
  */
 const deleteAccount = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   // Delete all related data
   await prisma.$transaction([
-    prisma.userSession.deleteMany({ where: { user_id: userId } }),
-    prisma.userPaymentMethod.deleteMany({ where: { user_id: userId } }),
-    prisma.invoice.deleteMany({ where: { user_id: userId } }),
-    prisma.subscription.deleteMany({ where: { user_id: userId } }),
-    prisma.notification.deleteMany({ where: { user_id: userId } }),
-    prisma.userCredentials.deleteMany({ where: { user_id: userId } }),
-    prisma.adminUser.delete({ where: { id: userId } })
+    prisma.userSession.deleteMany({ where: { user_id: userIdInt } }),
+    prisma.userPaymentMethod.deleteMany({ where: { user_id: userIdInt } }),
+    prisma.invoice.deleteMany({ where: { user_id: userIdInt } }),
+    prisma.subscription.deleteMany({ where: { user_id: userIdInt } }),
+    prisma.notification.deleteMany({ where: { user_id: userIdInt } }),
+    prisma.userCredentials.deleteMany({ where: { user_id: userIdInt } }),
+    prisma.adminUser.delete({ where: { id: userIdInt } })
   ]);
 
-  logger.info(`Account deleted for user ${userId}`);
+  logger.info(`Account deleted for user ${userIdInt}`);
   return true;
 };
 
