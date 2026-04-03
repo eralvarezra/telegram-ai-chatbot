@@ -220,15 +220,18 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
     // Rate limiting check for free users (ownerId is the bot owner)
     if (ownerId) {
       try {
+        // Ensure ownerId is an integer
+        const ownerIdInt = typeof ownerId === 'string' ? parseInt(ownerId, 10) : ownerId;
+
         // Get the owner's plan
         const owner = await prisma.adminUser.findUnique({
-          where: { id: ownerId },
+          where: { id: ownerIdInt },
           select: { plan: true }
         });
 
         if (owner && owner.plan === 'free') {
           // Check if owner has API key configured
-          const keyStatus = await apiKeyService.getApiKeyStatus(ownerId);
+          const keyStatus = await apiKeyService.getApiKeyStatus(ownerIdInt);
 
           if (!keyStatus.hasKey) {
             const limitMessage = '⚠️ Para usar este bot, necesitas configurar tu API key.\n\nVe a la configuración y añade tu API key de Groq u OpenAI para continuar.';
@@ -238,7 +241,7 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
           }
 
           // Check daily message limit
-          const limitCheck = await rateLimitService.checkDailyLimit(ownerId);
+          const limitCheck = await rateLimitService.checkDailyLimit(ownerIdInt);
 
           if (!limitCheck.allowed) {
             const resetTimeStr = limitCheck.resetTime
