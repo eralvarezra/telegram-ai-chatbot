@@ -540,6 +540,149 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
       return;
     }
 
+    // ============================================
+    // DIRECT PRODUCT/KEYWORD MATCHING
+    // Check if user is directly requesting a specific product they already know
+    // ============================================
+    const directRequestPatterns = [
+      /(?:quiero|dame|info|información|informacion|ver|muéstrame|muestrame|enséñame|ensename|dame|necesito|busco)\s+(?:el\s+|la\s+|los\s+|las\s+|un\s+|una\s+)?(.+)/i,
+      /(?:el\s+|la\s+|los\s+|las\s+)?(pack|video|foto|fotos|videos|sexting|llamada|call|premium|canal|contenido|packs)(?:\s+de\s+(.+))?$/i
+    ];
+
+    // Get available services for matching
+    const availableServices = await servicesMenu.getAvailableServices(ownerId);
+    let directServiceMatch = null;
+
+    // Check if message contains clear intent words + product keywords
+    const intentWords = ['quiero', 'dame', 'info', 'información', 'informacion', 'ver', 'muéstrame', 'muestrame', 'enséñame', 'ensename', 'necesito', 'busco', 'estoy buscando', 'me interesa', 'quisiera', 'podrías'];
+    const hasIntentWord = intentWords.some(word => text.toLowerCase().includes(word));
+
+    if (hasIntentWord) {
+      // Try to match service by name/keyword
+      for (const service of availableServices) {
+        const serviceName = service.name.toLowerCase();
+        const serviceWords = serviceName.split(/\s+/);
+
+        // Check if any word from service name is in the message
+        for (const word of serviceWords) {
+          if (word.length > 3 && text.toLowerCase().includes(word)) {
+            directServiceMatch = service;
+            break;
+          }
+        }
+
+        if (directServiceMatch) break;
+      }
+
+      // Also try getServiceBySelection for number/name matching
+      if (!directServiceMatch) {
+        directServiceMatch = servicesMenu.getServiceBySelection(availableServices, text);
+      }
+    }
+
+    // If we found a direct match, send the product info immediately
+    if (directServiceMatch) {
+      logger.info(`Direct product match for ${telegramId}: ${directServiceMatch.name}`);
+
+      const entity = await getEntitySafe(client, telegramId, event);
+
+      // Check if product has media
+      if (directServiceMatch.hasMedia) {
+        // Get media for this product
+        let matchingMedia = [];
+
+        if (directServiceMatch.productId) {
+          matchingMedia = await mediaService.getAllMedia({
+            ownerUserId: ownerId,
+            isActive: true,
+            productId: directServiceMatch.productId
+          });
+        } else {
+          // Fallback: search by keywords
+          const allMedia = await mediaService.getAllMedia({ ownerUserId: ownerId, isActive: true });
+          matchingMedia = allMedia.filter(m =>
+            m.keywords?.toLowerCase().includes(directServiceMatch.name.toLowerCase()) ||
+            directServiceMatch.name.toLowerCase().includes(m.keywords?.split(',')[0]?.toLowerCase())
+          );
+        }
+
+        if (matchingMedia.length > 0) {
+          // Send up to 10 items
+          const itemsToSend = matchingMedia.slice(0, 10);
+
+          for (const media of itemsToSend) {
+            const filePath = path.join(__dirname, '../uploads', media.file_path);
+
+            if (fs.existsSync(filePath)) {
+              try {
+                if (entity) {
+                  await client.sendFile(entity, {
+                    file: filePath,
+                    forceDocument: false
+                  });
+                } else {
+                  await event.message.reply({ file: filePath, message: '' });
+                }
+
+                await mediaService.recordMediaView(user.id, media.id, ownerId);
+                await sleep(300);
+              } catch (sendError) {
+                logger.error('Error sending direct match media:', sendError.message);
+              }
+            }
+          }
+
+          // Check if product has description
+          const hasDescription = directServiceMatch.description && directServiceMatch.description.trim().length > 0;
+
+          if (hasDescription) {
+            await sleep(500);
+            if (entity) {
+              await client.sendMessage(entity, { message: directServiceMatch.description });
+            } else {
+              await event.message.reply({ message: directServiceMatch.description });
+            }
+            await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
+          } else {
+            // Generate follow-up message
+            await sleep(500);
+            const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
+            if (entity) {
+              await client.sendMessage(entity, { message: askMessage });
+            } else {
+              await event.message.reply({ message: askMessage });
+            }
+            await messageService.saveMessage(user.id, 'assistant', askMessage);
+          }
+
+          logger.info(`Direct product content sent to ${telegramId}: ${directServiceMatch.name}`);
+          return;
+        }
+      }
+
+      // No media - send description or confirmation
+      if (directServiceMatch.description && directServiceMatch.description.trim().length > 0) {
+        await sleep(500);
+        if (entity) {
+          await client.sendMessage(entity, { message: directServiceMatch.description });
+        } else {
+          await event.message.reply({ message: directServiceMatch.description });
+        }
+        await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
+      } else {
+        const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+        if (entity) {
+          await client.sendMessage(entity, { message: confirmMessage });
+        } else {
+          await event.message.reply({ message: confirmMessage });
+        }
+        await messageService.saveMessage(user.id, 'assistant', confirmMessage);
+      }
+
+      logger.info(`Direct product info sent to ${telegramId}: ${directServiceMatch.name}`);
+      return;
+    }
+
     // Classify intent
     const intentResult = await intentClassifier.classifyIntent(text, ownerId);
     logger.info(`Intent classified: ${intentResult.intent} (confidence: ${intentResult.confidence})`);
