@@ -13,10 +13,13 @@ const logger = require('../utils/logger');
  */
 const recordTokenUsage = async (userId, tokensIn, tokensOut, model = null, keyType = 'user') => {
   try {
+    // Ensure userId is an integer
+    const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
     // Record in UsageTracking table
     await prisma.usageTracking.create({
       data: {
-        user_id: userId,
+        user_id: userIdInt,
         tokens_in: tokensIn,
         tokens_out: tokensOut,
         model,
@@ -27,14 +30,14 @@ const recordTokenUsage = async (userId, tokensIn, tokensOut, model = null, keyTy
 
     // Update user's total usage
     await prisma.adminUser.update({
-      where: { id: userId },
+      where: { id: userIdInt },
       data: {
         total_tokens_used: { increment: tokensIn + tokensOut },
         monthly_tokens_used: { increment: tokensIn + tokensOut }
       }
     });
 
-    logger.debug(`Recorded token usage for user ${userId}: ${tokensIn}+${tokensOut}`);
+    logger.debug(`Recorded token usage for user ${userIdInt}: ${tokensIn}+${tokensOut}`);
   } catch (error) {
     logger.error('Error recording token usage:', error);
     // Don't throw - usage tracking shouldn't break the flow
@@ -47,8 +50,11 @@ const recordTokenUsage = async (userId, tokensIn, tokensOut, model = null, keyTy
  * @returns {Promise<{ tokensIn: number, tokensOut: number, costUsd: number, used: number, limit: number }>}
  */
 const getMonthlyUsage = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       plan: true,
       monthly_tokens_used: true,
@@ -67,7 +73,7 @@ const getMonthlyUsage = async (userId) => {
 
   const usageRecords = await prisma.usageTracking.findMany({
     where: {
-      user_id: userId,
+      user_id: userIdInt,
       timestamp: { gte: startOfMonth }
     },
     select: {
@@ -101,8 +107,11 @@ const getMonthlyUsage = async (userId) => {
  * @returns {Promise<{ allowed: boolean, remaining: number, used: number }>}
  */
 const checkMonthlyLimit = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       plan: true,
       monthly_tokens_used: true
@@ -183,8 +192,11 @@ const calculateCost = (tokensIn, tokensOut, model) => {
  * @returns {Promise<object>}
  */
 const getUsageStats = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       plan: true,
       daily_message_count: true,
@@ -223,7 +235,7 @@ const getUsageStats = async (userId) => {
   }
 
   // Premium user
-  const monthlyUsage = await getMonthlyUsage(userId);
+  const monthlyUsage = await getMonthlyUsage(userIdInt);
 
   return {
     plan: 'premium',
