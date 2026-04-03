@@ -608,29 +608,33 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
         let itemsToSend = [];
         let shouldAskPreference = false;
 
-        // If we have keyword matches, use them
+        // Analyze matches and decide what to send
         if (bestMatches.length > 0) {
-          // Get top scored items
           const topScore = bestMatches[0].matchCount;
           const topMatches = bestMatches.filter(m => m.matchCount === topScore);
 
-          if (allProductMedia.length <= 2) {
-            // Only 1-2 total items - send all without asking
-            itemsToSend = allProductMedia.slice(0, 3);
-            logger.debug(`Only ${allProductMedia.length} items total, sending all`);
-          } else if (topMatches.length === 1 && topScore >= 3) {
-            // One clear winner with good score - send just that one
+          logger.debug(`Top score: ${topScore}, Top matches: ${topMatches.length}, Total media: ${allProductMedia.length}`);
+
+          // PRIORITY 1: One clear winner with good score - send only that
+          if (topMatches.length === 1 && topScore >= 3) {
             itemsToSend = [topMatches[0].media];
-            logger.debug(`One clear match: ${topMatches[0].media.title} (score: ${topScore})`);
-          } else if (topMatches.length <= 2) {
-            // Top items have same score and there are only 1-2 of them - send without asking
+            logger.info(`Sending single best match: ${topMatches[0].media.title} (score: ${topScore})`);
+          }
+          // PRIORITY 2: Very few items total (1-2) - send all without asking
+          else if (allProductMedia.length <= 2) {
+            itemsToSend = allProductMedia;
+            logger.debug(`Only ${allProductMedia.length} items total, sending all`);
+          }
+          // PRIORITY 3: 2 items with same top score - send both without asking
+          else if (topMatches.length === 2 && topScore >= 2) {
             itemsToSend = topMatches.map(m => m.media);
-            logger.debug(`Sending ${topMatches.length} top matches with same score`);
-          } else {
-            // Multiple items with same score - send top 3 and ask preference
+            logger.debug(`Sending 2 matches with same score: ${topScore}`);
+          }
+          // PRIORITY 4: More items with similar scores - send top 3 and ask preference
+          else {
             itemsToSend = bestMatches.slice(0, 3).map(m => m.media);
             shouldAskPreference = true;
-            logger.debug(`Multiple matches with similar scores, will ask preference`);
+            logger.debug(`Multiple matches, will ask preference`);
           }
         }
 
@@ -667,7 +671,7 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
           }
         }
 
-        // Check if product has description
+        // Decide follow-up message
         const hasDescription = directServiceMatch.description && directServiceMatch.description.trim().length > 0;
 
         if (hasDescription) {
@@ -678,8 +682,18 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             await event.message.reply({ message: directServiceMatch.description });
           }
           await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
-        } else if (itemsToSend.length > 0 && shouldAskPreference && allProductMedia.length > 2) {
-          // Only ask for preference if there are more items to show
+        } else if (itemsToSend.length === 1) {
+          // Single item sent - simple confirmation
+          await sleep(500);
+          const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+          if (entity) {
+            await client.sendMessage(entity, { message: confirmMessage });
+          } else {
+            await event.message.reply({ message: confirmMessage });
+          }
+          await messageService.saveMessage(user.id, 'assistant', confirmMessage);
+        } else if (shouldAskPreference && allProductMedia.length > 3) {
+          // Multiple items and there are more to show - ask preference
           await sleep(500);
           const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
           if (entity) {
@@ -688,8 +702,8 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             await event.message.reply({ message: askMessage });
           }
           await messageService.saveMessage(user.id, 'assistant', askMessage);
-        } else if (itemsToSend.length > 0) {
-          // Send a simple confirmation instead of asking for preference
+        } else {
+          // Sent 2-3 items, no more to show - simple confirmation
           await sleep(500);
           const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
           if (entity) {
