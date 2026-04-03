@@ -12,9 +12,12 @@ const OpenAI = require('openai');
 const getApiKeyForUser = async (userId) => {
   const platformKey = process.env.PLATFORM_GROQ_KEY || process.env.AI_API_KEY;
 
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   // Get user info
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       plan: true,
       user_api_key: true,
@@ -26,7 +29,7 @@ const getApiKeyForUser = async (userId) => {
   // If user not found, check for platform key
   if (!user) {
     if (platformKey) {
-      logger.debug(`User ${userId} not found, using platform key as fallback`);
+      logger.debug(`User ${userIdInt} not found, using platform key as fallback`);
       return {
         apiKey: platformKey,
         provider: 'groq',
@@ -41,7 +44,7 @@ const getApiKeyForUser = async (userId) => {
     if (!platformKey) {
       throw new ApiKeyError('Platform API key not configured. Contact support.');
     }
-    logger.debug(`Using platform key for premium user ${userId}`);
+    logger.debug(`Using platform key for premium user ${userIdInt}`);
     return {
       apiKey: platformKey,
       provider: 'groq',
@@ -54,7 +57,7 @@ const getApiKeyForUser = async (userId) => {
     // During onboarding, allow platform key temporarily for free users
     // This allows them to complete personality setup before adding their own key
     if (platformKey) {
-      logger.debug(`Free user ${userId} has no key, using platform key temporarily`);
+      logger.debug(`Free user ${userIdInt} has no key, using platform key temporarily`);
       return {
         apiKey: platformKey,
         provider: 'groq',
@@ -66,7 +69,7 @@ const getApiKeyForUser = async (userId) => {
 
   try {
     const decryptedKey = decryptApiKey(user.user_api_key, user.user_api_key_iv);
-    logger.debug(`Using user's own API key for free user ${userId}`);
+    logger.debug(`Using user's own API key for free user ${userIdInt}`);
     return {
       apiKey: decryptedKey,
       provider: user.user_api_provider || 'groq',
@@ -86,6 +89,9 @@ const getApiKeyForUser = async (userId) => {
  * @returns {Promise<{ success: boolean, keyPreview: string }>}
  */
 const saveUserApiKey = async (userId, apiKey, provider = 'groq') => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   // Validate format
   if (!validateApiKeyFormat(apiKey, provider)) {
     throw new ApiKeyError(`Invalid API key format for ${provider}. Expected format: ${provider === 'openai' ? 'sk-...' : 'gsk_...'}`);
@@ -101,7 +107,7 @@ const saveUserApiKey = async (userId, apiKey, provider = 'groq') => {
   const { encrypted, iv } = encryptApiKey(apiKey);
 
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: {
       user_api_key: encrypted,
       user_api_key_iv: iv,
@@ -109,7 +115,7 @@ const saveUserApiKey = async (userId, apiKey, provider = 'groq') => {
     }
   });
 
-  logger.info(`API key saved for user ${userId}`);
+  logger.info(`API key saved for user ${userIdInt}`);
 
   return {
     success: true,
@@ -123,8 +129,11 @@ const saveUserApiKey = async (userId, apiKey, provider = 'groq') => {
  * @returns {Promise<{ success: boolean }>}
  */
 const removeUserApiKey = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: {
       user_api_key: null,
       user_api_key_iv: null,
@@ -132,7 +141,7 @@ const removeUserApiKey = async (userId) => {
     }
   });
 
-  logger.info(`API key removed for user ${userId}`);
+  logger.info(`API key removed for user ${userIdInt}`);
 
   return { success: true };
 };
@@ -143,8 +152,11 @@ const removeUserApiKey = async (userId) => {
  * @returns {Promise<{ hasKey: boolean, keyPreview?: string, provider?: string, isValid?: boolean }>}
  */
 const getApiKeyStatus = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId },
+    where: { id: userIdInt },
     select: {
       plan: true,
       user_api_key: true,
@@ -243,16 +255,19 @@ const validateApiKey = async (apiKey, provider) => {
  * @returns {Promise<{ success: boolean, plan: string }>}
  */
 const updateUserPlan = async (userId, plan) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   if (!['free', 'premium'].includes(plan)) {
     throw new ApiKeyError('Invalid plan. Must be "free" or "premium"');
   }
 
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { plan }
   });
 
-  logger.info(`User ${userId} plan updated to ${plan}`);
+  logger.info(`User ${userIdInt} plan updated to ${plan}`);
 
   return { success: true, plan };
 };
