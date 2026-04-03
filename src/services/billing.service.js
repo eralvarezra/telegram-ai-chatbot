@@ -74,8 +74,11 @@ const PLANS = {
  * Get or create Stripe customer for user
  */
 const getOrCreateCustomer = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId }
+    where: { id: userIdInt }
   });
 
   if (!user) {
@@ -97,17 +100,17 @@ const getOrCreateCustomer = async (userId) => {
     email: user.email,
     name: user.name || undefined,
     metadata: {
-      userId: userId.toString()
+      userId: userIdInt.toString()
     }
   });
 
   // Save customer ID to user
   await prisma.adminUser.update({
-    where: { id: userId },
+    where: { id: userIdInt },
     data: { stripe_customer_id: customer.id }
   });
 
-  logger.info(`Created Stripe customer ${customer.id} for user ${userId}`);
+  logger.info(`Created Stripe customer ${customer.id} for user ${userIdInt}`);
   return customer.id;
 };
 
@@ -146,8 +149,11 @@ const createCheckoutSession = async (userId, plan) => {
  * Create billing portal session
  */
 const createPortalSession = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId }
+    where: { id: userIdInt }
   });
 
   if (!user?.stripe_customer_id) {
@@ -324,8 +330,11 @@ const handleWebhookEvent = async (event) => {
  * Get user's subscription
  */
 const getSubscription = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const subscription = await prisma.subscription.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   });
 
   if (!subscription) {
@@ -347,8 +356,11 @@ const getSubscription = async (userId) => {
  * Get user's payment methods
  */
 const getPaymentMethods = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   return prisma.userPaymentMethod.findMany({
-    where: { user_id: userId },
+    where: { user_id: userIdInt },
     orderBy: [{ is_default: 'desc' }, { created_at: 'desc' }]
   });
 };
@@ -357,8 +369,11 @@ const getPaymentMethods = async (userId) => {
  * Add a payment method
  */
 const addPaymentMethod = async (userId, paymentMethodId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const stripeClient = getStripe();
-  const customerId = await getOrCreateCustomer(userId);
+  const customerId = await getOrCreateCustomer(userIdInt);
 
   // Attach payment method to customer
   const paymentMethod = await stripeClient.paymentMethods.attach(paymentMethodId, {
@@ -367,13 +382,13 @@ const addPaymentMethod = async (userId, paymentMethodId) => {
 
   // Check if this is the first payment method
   const existingMethods = await prisma.userPaymentMethod.count({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   });
 
   // Save to database
   const savedMethod = await prisma.userPaymentMethod.create({
     data: {
-      user_id: userId,
+      user_id: userIdInt,
       stripe_payment_method_id: paymentMethod.id,
       type: paymentMethod.type,
       brand: paymentMethod.card?.brand,
@@ -391,8 +406,11 @@ const addPaymentMethod = async (userId, paymentMethodId) => {
  * Remove a payment method
  */
 const removePaymentMethod = async (userId, paymentMethodId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const paymentMethod = await prisma.userPaymentMethod.findFirst({
-    where: { id: paymentMethodId, user_id: userId }
+    where: { id: paymentMethodId, user_id: userIdInt }
   });
 
   if (!paymentMethod) {
@@ -416,7 +434,7 @@ const removePaymentMethod = async (userId, paymentMethodId) => {
   // If this was the default, set another as default
   if (paymentMethod.is_default) {
     const nextMethod = await prisma.userPaymentMethod.findFirst({
-      where: { user_id: userId }
+      where: { user_id: userIdInt }
     });
 
     if (nextMethod) {
@@ -432,8 +450,11 @@ const removePaymentMethod = async (userId, paymentMethodId) => {
  * Set default payment method
  */
 const setDefaultPaymentMethod = async (userId, paymentMethodId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const paymentMethod = await prisma.userPaymentMethod.findFirst({
-    where: { id: paymentMethodId, user_id: userId }
+    where: { id: paymentMethodId, user_id: userIdInt }
   });
 
   if (!paymentMethod) {
@@ -441,7 +462,7 @@ const setDefaultPaymentMethod = async (userId, paymentMethodId) => {
   }
 
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId }
+    where: { id: userIdInt }
   });
 
   if (user?.stripe_customer_id) {
@@ -458,7 +479,7 @@ const setDefaultPaymentMethod = async (userId, paymentMethodId) => {
   // Update in database
   await prisma.$transaction([
     prisma.userPaymentMethod.updateMany({
-      where: { user_id: userId },
+      where: { user_id: userIdInt },
       data: { is_default: false }
     }),
     prisma.userPaymentMethod.update({
@@ -472,8 +493,11 @@ const setDefaultPaymentMethod = async (userId, paymentMethodId) => {
  * Get invoices for user
  */
 const getInvoices = async (userId, limit = 10) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   return prisma.invoice.findMany({
-    where: { user_id: userId },
+    where: { user_id: userIdInt },
     orderBy: { created_at: 'desc' },
     take: limit
   });

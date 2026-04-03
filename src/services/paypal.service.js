@@ -115,13 +115,16 @@ const createBillingPlan = async (planKey) => {
  * Create PayPal subscription
  */
 const createSubscription = async (userId, planKey) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const client = getPayPal();
   if (!client) {
     throw new Error('PayPal not configured');
   }
 
   const user = await prisma.adminUser.findUnique({
-    where: { id: userId }
+    where: { id: userIdInt }
   });
 
   if (!user) {
@@ -176,9 +179,9 @@ const createSubscription = async (userId, planKey) => {
 
     // Store pending subscription
     await prisma.subscription.upsert({
-      where: { user_id: userId },
+      where: { user_id: userIdInt },
       create: {
-        user_id: userId,
+        user_id: userIdInt,
         plan: planKey,
         status: 'pending',
         stripe_subscription_id: subscription.id, // Reuse field for PayPal subscription ID
@@ -192,7 +195,7 @@ const createSubscription = async (userId, planKey) => {
       }
     });
 
-    logger.info(`Created PayPal subscription ${subscription.id} for user ${userId}`);
+    logger.info(`Created PayPal subscription ${subscription.id} for user ${userIdInt}`);
 
     return {
       subscriptionId: subscription.id,
