@@ -26,6 +26,9 @@ export default function OnboardingPage() {
 
   const API_URL = 'http://localhost:3000';
 
+  // Check if user is premium
+  const isPremium = user?.plan === 'premium';
+
   // Get auth token
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
@@ -65,12 +68,15 @@ export default function OnboardingPage() {
         });
         const data = await res.json();
 
-        if (data.telegram?.configured && data.ai?.configured) {
-          // User already has both configured, skip to complete
-          setStep(3);
-        } else if (data.telegram?.configured) {
-          // Has Telegram, needs AI
-          setStep(2);
+        if (data.telegram?.configured) {
+          // Has Telegram, check if needs AI
+          if (isPremium || data.ai?.configured) {
+            // Premium user or already has AI, skip to complete
+            setStep(3);
+          } else {
+            // Free user without AI
+            setStep(2);
+          }
         }
       } catch (err) {
         console.error('Error checking credentials:', err);
@@ -78,7 +84,7 @@ export default function OnboardingPage() {
     };
 
     checkCredentials();
-  }, []);
+  }, [isPremium]);
 
   const handleTelegramSubmit = async (e) => {
     e.preventDefault();
@@ -128,7 +134,13 @@ export default function OnboardingPage() {
 
       if (connectData.status === 'connected') {
         // Already connected (has session)
-        setStep(2);
+        // For premium users, skip to complete
+        if (isPremium) {
+          await completeOnboarding();
+          setStep(3);
+        } else {
+          setStep(2);
+        }
       } else if (connectData.status === 'waiting_code') {
         // Need verification code
         setAuthStatus('waiting_code');
@@ -167,7 +179,13 @@ export default function OnboardingPage() {
 
       if (data.status === 'connected') {
         setAuthStatus('connected');
-        setStep(2);
+        // For premium users, skip to complete
+        if (isPremium) {
+          await completeOnboarding();
+          setStep(3);
+        } else {
+          setStep(2);
+        }
         setMessage('¡Telegram conectado exitosamente!');
       } else if (data.status === 'waiting_password') {
         setAuthStatus('waiting_password');
@@ -205,7 +223,13 @@ export default function OnboardingPage() {
 
       if (data.status === 'connected') {
         setAuthStatus('connected');
-        setStep(2);
+        // For premium users, skip to complete
+        if (isPremium) {
+          await completeOnboarding();
+          setStep(3);
+        } else {
+          setStep(2);
+        }
         setMessage('¡Telegram conectado exitosamente!');
       } else {
         setError(data.error || 'Contraseña incorrecta');
@@ -263,9 +287,40 @@ export default function OnboardingPage() {
     router.push('/');
   };
 
+  // Handle premium user completing Telegram setup
+  const handlePremiumComplete = async () => {
+    await completeOnboarding();
+    setStep(3);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Plan Badge */}
+        {isPremium && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⭐</span>
+              <div>
+                <p className="text-white font-semibold">Plan Premium</p>
+                <p className="text-zinc-400 text-sm">API key incluida, mensajes ilimitados</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isPremium && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🆓</span>
+              <div>
+                <p className="text-white font-semibold">Plan Free</p>
+                <p className="text-zinc-400 text-sm">Necesitarás agregar tu propia API key</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-white">Configurar tu Bot</h1>
@@ -274,13 +329,28 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* Progress */}
+        {/* Progress - Only show for free users or adjust steps */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
-              {s}
-            </div>
-          ))}
+          {(isPremium ? [1, 2] : [1, 2, 3]).map((s, idx) => {
+            const currentStep = isPremium ? step : step;
+            const isCompleted = isPremium ? step > s : step > s;
+            const isCurrent = isPremium ? step === s : step === s;
+
+            return (
+              <div key={s} className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  isCompleted ? 'bg-green-600 text-white' :
+                  isCurrent ? 'bg-blue-600 text-white' :
+                  'bg-zinc-800 text-zinc-500'
+                }`}>
+                  {isCompleted ? '✓' : isPremium ? idx + 1 : s}
+                </div>
+                {s < (isPremium ? 2 : 3) && (
+                  <div className={`w-8 h-0.5 ${isCompleted ? 'bg-green-600' : 'bg-zinc-800'}`} />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {error && (
@@ -457,13 +527,19 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 2: AI */}
-        {step === 2 && (
+        {/* Step 2: AI (Only for FREE users) */}
+        {step === 2 && !isPremium && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Configurar IA (Groq)</h2>
             <p className="text-zinc-400 text-sm mb-4">
               Obtén tu API key en <a href="https://console.groq.com/keys" target="_blank" className="text-blue-500 hover:underline">console.groq.com/keys</a>
             </p>
+
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <p className="text-yellow-200 text-sm">
+                ⚠️ Como usuario Free, necesitas tu propia API key. Tienes un límite de 50 mensajes/día.
+              </p>
+            </div>
 
             <form onSubmit={handleAISubmit} className="space-y-4">
               <div>
@@ -497,6 +573,31 @@ export default function OnboardingPage() {
           </div>
         )}
 
+        {/* Step 2 for PREMIUM users (skip AI setup) */}
+        {step === 2 && isPremium && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+            <div className="text-5xl mb-4">🎉</div>
+            <h2 className="text-xl font-semibold text-white mb-2">¡Todo Listo!</h2>
+            <p className="text-zinc-400 mb-4">
+              Como usuario Premium, tu API key ya está configurada automáticamente.
+            </p>
+            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <p className="text-green-200 text-sm">
+                ✅ API key de Groq incluida<br/>
+                ✅ Mensajes ilimitados<br/>
+                ✅ Agente personalizado disponible
+              </p>
+            </div>
+            <button
+              onClick={handlePremiumComplete}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg"
+            >
+              {loading ? 'Guardando...' : 'Comenzar'}
+            </button>
+          </div>
+        )}
+
         {/* Step 3: Complete */}
         {step === 3 && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
@@ -505,6 +606,14 @@ export default function OnboardingPage() {
             <p className="text-zinc-400 mb-4">
               Tu bot está configurado y listo para usar.
             </p>
+            {isPremium && (
+              <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <p className="text-purple-200 text-sm">
+                  ⭐ Plan Premium activado<br/>
+                  Disfruta de mensajes ilimitados y tu agente personalizado
+                </p>
+              </div>
+            )}
             <button
               onClick={() => router.push('/')}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg"
