@@ -113,6 +113,9 @@ const createNotification = async (data) => {
  * @returns {Promise<Object>}
  */
 const getUserNotifications = async (userId, options = {}) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     const {
       limit = 50,
@@ -123,7 +126,7 @@ const getUserNotifications = async (userId, options = {}) => {
     } = options;
 
     const where = {
-      user_id: userId,
+      user_id: userIdInt,
       OR: [
         { expires_at: null },
         { expires_at: { gte: new Date() } }
@@ -153,7 +156,7 @@ const getUserNotifications = async (userId, options = {}) => {
         skip: offset
       }),
       prisma.notification.count({
-        where: { user_id: userId, is_read: false }
+        where: { user_id: userIdInt, is_read: false }
       }),
       prisma.notification.count({ where })
     ]);
@@ -181,11 +184,14 @@ const getUserNotifications = async (userId, options = {}) => {
  * @returns {Promise<Object>}
  */
 const markAsRead = async (notificationId, userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     const notification = await prisma.notification.updateFirst({
       where: {
         id: notificationId,
-        user_id: userId
+        user_id: userIdInt
       },
       data: {
         is_read: true,
@@ -210,10 +216,13 @@ const markAsRead = async (notificationId, userId) => {
  * @returns {Promise<number>} - Count of updated notifications
  */
 const markAllAsRead = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     const result = await prisma.notification.updateMany({
       where: {
-        user_id: userId,
+        user_id: userIdInt,
         is_read: false
       },
       data: {
@@ -222,7 +231,7 @@ const markAllAsRead = async (userId) => {
       }
     });
 
-    logger.info(`Marked ${result.count} notifications as read for user ${userId}`);
+    logger.info(`Marked ${result.count} notifications as read for user ${userIdInt}`);
     return result.count;
   } catch (error) {
     logger.error('Error marking all notifications as read:', error);
@@ -237,11 +246,14 @@ const markAllAsRead = async (userId) => {
  * @returns {Promise<boolean>}
  */
 const deleteNotification = async (notificationId, userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     const result = await prisma.notification.deleteMany({
       where: {
         id: notificationId,
-        user_id: userId
+        user_id: userIdInt
       }
     });
 
@@ -258,12 +270,15 @@ const deleteNotification = async (notificationId, userId) => {
  * @returns {Promise<number>}
  */
 const clearAllNotifications = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     const result = await prisma.notification.deleteMany({
-      where: { user_id: userId }
+      where: { user_id: userIdInt }
     });
 
-    logger.info(`Cleared ${result.count} notifications for user ${userId}`);
+    logger.info(`Cleared ${result.count} notifications for user ${userIdInt}`);
     return result.count;
   } catch (error) {
     logger.error('Error clearing notifications:', error);
@@ -296,10 +311,13 @@ const cleanupExpiredNotifications = async () => {
  * @returns {Promise<number>}
  */
 const getUnreadCount = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     return await prisma.notification.count({
       where: {
-        user_id: userId,
+        user_id: userIdInt,
         is_read: false,
         OR: [
       { expires_at: null },
