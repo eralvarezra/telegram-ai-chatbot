@@ -195,6 +195,138 @@ const findMediaByKeyword = async (text) => {
 };
 
 /**
+ * Find the best matching media based on keyword match count
+ * Returns media sorted by number of keyword matches (descending)
+ * @param {string} text - User's message
+ * @param {Array} mediaList - List of media to search through (optional)
+ * @param {number} productId - Product ID to filter by (optional)
+ * @param {string} ownerId - Owner ID (optional)
+ * @returns {Promise<Array>} - Array of media with match scores, sorted by relevance
+ */
+const findBestMatchingMedia = async (text, mediaList = null, productId = null, ownerId = null) => {
+  const textLower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove accents
+  const words = textLower.split(/\s+/).filter(w => w.length > 2); // Ignore short words
+
+  logger.debug(`Finding best matching media for: "${textLower}"`);
+  logger.debug(`Words: ${words.join(', ')}`);
+
+  // Get media list if not provided
+  let media = mediaList;
+  if (!media) {
+    const where = { is_active: true };
+    if (productId) {
+      where.product_id = parseInt(productId);
+    }
+    if (ownerId) {
+      where.owner_user_id = parseInt(ownerId);
+    }
+
+    media = await prisma.mediaContent.findMany({
+      where,
+      orderBy: [
+        { featured: 'desc' },
+        { priority: 'desc' },
+        { view_count: 'asc' }
+      ]
+    });
+  }
+
+  // Calculate match score for each media
+  const scoredMedia = media.map(m => {
+    const keywords = (m.keywords || '')
+      .split(',')
+      .map(k => k.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
+      .filter(k => k.length > 0);
+
+    let matchCount = 0;
+    let matchedKeywords = [];
+    let exactMatches = 0;
+
+    // Check each keyword against the text
+    for (const keyword of keywords) {
+      const keywordWords = keyword.split(/\s+/);
+
+      // Check for exact keyword match
+      if (textLower.includes(keyword)) {
+        matchCount += 3; // Exact match worth more
+        exactMatches++;
+        matchedKeywords.push(keyword);
+      } else {
+        // Check for partial word matches
+        for (const keywordWord of keywordWords) {
+          if (words.some(w => w.includes(keywordWord) || keywordWord.includes(w))) {
+            matchCount++;
+            if (!matchedKeywords.includes(keyword)) {
+              matchedKeywords.push(keyword);
+            }
+          }
+        }
+      }
+    }
+
+    // Also check title for direct mentions
+    const titleLower = (m.title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (textLower.includes(titleLower) || titleLower.includes(textLower)) {
+      matchCount += 5; // Title match is very strong
+    }
+
+    // Check individual words from title
+    const titleWords = titleLower.split(/\s+/).filter(w => w.length > 3);
+    for (const tw of titleWords) {
+      if (words.some(w => w.includes(tw) || tw.includes(w))) {
+        matchCount += 2;
+      }
+    }
+
+    return {
+      media: serializeMedia(m),
+      matchCount,
+      exactMatches,
+      matchedKeywords,
+      keywordCount: keywords.length
+    };
+  });
+
+  // Filter to only include media with matches and sort by score
+  const matched = scoredMedia
+    .filter(item => item.matchCount > 0)
+    .sort((a, b) => {
+      // Sort by match count first, then by featured/priority
+      if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+      if (b.media.featured !== a.media.featured) return b.media.featured ? 1 : -1;
+      return b.media.priority - a.media.priority;
+    });
+
+  logger.debug(`Found ${matched.length} matching media items`);
+
+  // Log top matches
+  matched.slice(0, 3).forEach((item, i) => {
+    logger.debug(`Match ${i + 1}: "${item.media.title}" - Score: ${item.matchCount}, Keywords: ${item.matchedKeywords.join(', ')}`);
+  });
+
+  return matched;
+};
+
+/**
+ * Find the single best matching media
+ * @param {string} text - User's message
+ * @param {number} productId - Product ID to filter by
+ * @param {string} ownerId - Owner ID
+ * @returns {Promise<object|null>} - Best matching media or null
+ */
+const findSingleBestMatch = async (text, productId = null, ownerId = null) => {
+  const matches = await findBestMatchingMedia(text, null, productId, ownerId);
+
+  if (matches.length > 0) {
+    const best = matches[0];
+    logger.info(`Best match: "${best.media.title}" (score: ${best.matchCount})`);
+    return best.media;
+  }
+
+  return null;
+};
+
+/**
  * Get bulk media for browsing content
  * Returns 3-6 items prioritized by: featured > priority > view_count > recent
  */
@@ -498,6 +630,8 @@ module.exports = {
   getAllMedia,
   getMediaById,
   findMediaByKeyword,
+  findBestMatchingMedia,
+  findSingleBestMatch,
   getBulkMedia,
   recordMediaView,
   deleteMedia,

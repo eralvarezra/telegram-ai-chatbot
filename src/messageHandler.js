@@ -588,76 +588,85 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
 
       // Check if product has media
       if (directServiceMatch.hasMedia) {
-        // Get media for this product
-        let matchingMedia = [];
+        // Use keyword-based matching to find the best media
+        const bestMatches = await mediaService.findBestMatchingMedia(
+          text,
+          null,
+          directServiceMatch.productId,
+          ownerId
+        );
 
-        if (directServiceMatch.productId) {
-          matchingMedia = await mediaService.getAllMedia({
-            ownerUserId: ownerId,
-            isActive: true,
-            productId: directServiceMatch.productId
-          });
-        } else {
-          // Fallback: search by keywords
-          const allMedia = await mediaService.getAllMedia({ ownerUserId: ownerId, isActive: true });
-          matchingMedia = allMedia.filter(m =>
-            m.keywords?.toLowerCase().includes(directServiceMatch.name.toLowerCase()) ||
-            directServiceMatch.name.toLowerCase().includes(m.keywords?.split(',')[0]?.toLowerCase())
-          );
+        // Send top matching media (max 5, but prefer highly matched ones)
+        const itemsToSend = bestMatches
+          .filter(m => m.matchCount >= 2) // Only send good matches
+          .slice(0, 5)
+          .map(m => m.media);
+
+        // If no good matches, send featured/recent media from the product
+        if (itemsToSend.length === 0 && bestMatches.length > 0) {
+          itemsToSend.push(...bestMatches.slice(0, 3).map(m => m.media));
         }
 
-        if (matchingMedia.length > 0) {
-          // Send up to 10 items
-          const itemsToSend = matchingMedia.slice(0, 10);
+        // Fallback: get all media from product if still empty
+        if (itemsToSend.length === 0) {
+          let fallbackMedia = [];
+          if (directServiceMatch.productId) {
+            fallbackMedia = await mediaService.getAllMedia({
+              ownerUserId: ownerId,
+              isActive: true,
+              productId: directServiceMatch.productId
+            });
+          }
+          itemsToSend.push(...fallbackMedia.slice(0, 3));
+        }
 
-          for (const media of itemsToSend) {
-            const filePath = path.join(__dirname, '../uploads', media.file_path);
+        for (const media of itemsToSend) {
+          const filePath = path.join(__dirname, '../uploads', media.file_path);
 
-            if (fs.existsSync(filePath)) {
-              try {
-                if (entity) {
-                  await client.sendFile(entity, {
-                    file: filePath,
-                    forceDocument: false
-                  });
-                } else {
-                  await event.message.reply({ file: filePath, message: '' });
-                }
-
-                await mediaService.recordMediaView(user.id, media.id, ownerId);
-                await sleep(300);
-              } catch (sendError) {
-                logger.error('Error sending direct match media:', sendError.message);
+          if (fs.existsSync(filePath)) {
+            try {
+              if (entity) {
+                await client.sendFile(entity, {
+                  file: filePath,
+                  forceDocument: false
+                });
+              } else {
+                await event.message.reply({ file: filePath, message: '' });
               }
+
+              await mediaService.recordMediaView(user.id, media.id, ownerId);
+              await sleep(300);
+            } catch (sendError) {
+              logger.error('Error sending direct match media:', sendError.message);
             }
           }
-
-          // Check if product has description
-          const hasDescription = directServiceMatch.description && directServiceMatch.description.trim().length > 0;
-
-          if (hasDescription) {
-            await sleep(500);
-            if (entity) {
-              await client.sendMessage(entity, { message: directServiceMatch.description });
-            } else {
-              await event.message.reply({ message: directServiceMatch.description });
-            }
-            await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
-          } else {
-            // Generate follow-up message
-            await sleep(500);
-            const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
-            if (entity) {
-              await client.sendMessage(entity, { message: askMessage });
-            } else {
-              await event.message.reply({ message: askMessage });
-            }
-            await messageService.saveMessage(user.id, 'assistant', askMessage);
-          }
-
-          logger.info(`Direct product content sent to ${telegramId}: ${directServiceMatch.name}`);
-          return;
         }
+
+        // Check if product has description
+        const hasDescription = directServiceMatch.description && directServiceMatch.description.trim().length > 0;
+
+        if (hasDescription) {
+          await sleep(500);
+          if (entity) {
+            await client.sendMessage(entity, { message: directServiceMatch.description });
+          } else {
+            await event.message.reply({ message: directServiceMatch.description });
+          }
+          await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
+        } else if (itemsToSend.length > 0) {
+          // Generate follow-up message
+          await sleep(500);
+          const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
+          if (entity) {
+            await client.sendMessage(entity, { message: askMessage });
+          } else {
+            await event.message.reply({ message: askMessage });
+          }
+          await messageService.saveMessage(user.id, 'assistant', askMessage);
+        }
+
+        logger.info(`Direct product content sent to ${telegramId}: ${directServiceMatch.name} (${itemsToSend.length} media items)`);
+        return;
       }
 
       // No media - send description or confirmation
