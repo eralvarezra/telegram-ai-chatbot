@@ -364,8 +364,11 @@ const getDefaultConfig = () => {
  * @returns {Promise<string>} - New system prompt
  */
 const regenerateSystemPrompt = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const agent = await prisma.agent.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userIdInt }
   });
 
   if (!agent) {
@@ -375,7 +378,7 @@ const regenerateSystemPrompt = async (userId) => {
   const newPrompt = generateSystemPrompt(agent);
 
   await prisma.agent.update({
-    where: { user_id: userId },
+    where: { user_id: userIdInt },
     data: { system_prompt: newPrompt }
   });
 

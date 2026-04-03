@@ -96,7 +96,9 @@ const checkUserInstance = async (userId, telegramId = null) => {
   // Find user
   let user;
   if (userId) {
-    user = await prisma.user.findUnique({ where: { id: userId } });
+    // Ensure userId is an integer
+    const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    user = await prisma.user.findUnique({ where: { id: userIdInt } });
   } else if (telegramId) {
     user = await prisma.user.findUnique({ where: { telegram_id: BigInt(telegramId) } });
   }
@@ -132,22 +134,25 @@ const checkUserInstance = async (userId, telegramId = null) => {
  * @returns {Promise<object>}
  */
 const resetUserForNewInstance = async (userId, instanceId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   try {
     // Delete all messages for this user
     const deletedMessages = await prisma.message.deleteMany({
-      where: { user_id: userId }
+      where: { user_id: userIdInt }
     });
 
     // Update user with new instance ID and reset tone
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: userIdInt },
       data: {
         bot_instance_id: instanceId,
         last_tone: null
       }
     });
 
-    logger.info(`Reset user ${userId} for new instance. Deleted ${deletedMessages.count} messages.`);
+    logger.info(`Reset user ${userIdInt} for new instance. Deleted ${deletedMessages.count} messages.`);
 
     return {
       success: true,
@@ -155,7 +160,7 @@ const resetUserForNewInstance = async (userId, instanceId) => {
       user: updatedUser
     };
   } catch (error) {
-    logger.error(`Error resetting user ${userId} for new instance:`, error);
+    logger.error(`Error resetting user ${userIdInt} for new instance:`, error);
     throw error;
   }
 };
@@ -167,13 +172,16 @@ const resetUserForNewInstance = async (userId, instanceId) => {
  * @returns {Promise<object>}
  */
 const ensureUserInstance = async (userId) => {
+  // Ensure userId is an integer
+  const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
   const instanceId = await getBotInstanceId();
 
   if (!instanceId) {
     return { needsReset: false };
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: userIdInt } });
 
   if (!user) {
     return { needsReset: false };
@@ -183,13 +191,13 @@ const ensureUserInstance = async (userId) => {
   if (user.bot_instance_id !== instanceId) {
     if (user.bot_instance_id) {
       // User had a previous instance - reset needed
-      logger.info(`User ${userId} has outdated instance. Resetting...`);
-      await resetUserForNewInstance(userId, instanceId);
+      logger.info(`User ${userIdInt} has outdated instance. Resetting...`);
+      await resetUserForNewInstance(userIdInt, instanceId);
       return { needsReset: true, wasReset: true };
     } else {
       // User has no instance ID yet - just update
       await prisma.user.update({
-        where: { id: userId },
+        where: { id: userIdInt },
         data: { bot_instance_id: instanceId }
       });
       return { needsReset: false, wasUpdated: true };
