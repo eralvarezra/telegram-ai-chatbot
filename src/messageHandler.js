@@ -322,11 +322,14 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
 
               if (fs.existsSync(filePath)) {
                 try {
+                  // Send videos as documents to preserve quality, images as media
+                  const isVideo = media.file_type === 'video' || filePath.toLowerCase().endsWith('.mp4');
+
                   // Send using entity or fallback to message.reply
                   if (entity) {
                     await client.sendFile(entity, {
                       file: filePath,
-                      forceDocument: false
+                      forceDocument: isVideo // Videos as documents, images as media
                     });
                   } else {
                     // Fallback: use message.reply for files
@@ -693,10 +696,13 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
 
           if (fs.existsSync(filePath)) {
             try {
+              // Send videos as documents to preserve quality, images as media
+              const isVideo = media.file_type === 'video' || filePath.toLowerCase().endsWith('.mp4');
+
               if (entity) {
                 await client.sendFile(entity, {
                   file: filePath,
-                  forceDocument: false
+                  forceDocument: isVideo // Videos as documents, images as media
                 });
               } else {
                 await event.message.reply({ file: filePath, message: '' });
@@ -871,6 +877,9 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
         if (fs.existsSync(filePath)) {
           const entity = await getEntitySafe(client, telegramId, event);
 
+          // Send videos as documents to preserve quality, images as media
+          const isVideo = matchedMedia.file_type === 'video' || filePath.toLowerCase().endsWith('.mp4');
+
           // Generate natural caption
           const caption = await bulkMediaService.generateNaturalCaption(matchedMedia, botConfig, ownerId);
 
@@ -881,7 +890,7 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             await client.sendFile(entity, {
               file: filePath,
               caption: caption,
-              forceDocument: false
+              forceDocument: isVideo // Videos as documents, images as media
             });
           } else {
             // Fallback: use message.reply
