@@ -596,28 +596,53 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
           ownerId
         );
 
-        // Send top matching media (max 5, but prefer highly matched ones)
-        const itemsToSend = bestMatches
-          .filter(m => m.matchCount >= 2) // Only send good matches
-          .slice(0, 5)
-          .map(m => m.media);
-
-        // If no good matches, send featured/recent media from the product
-        if (itemsToSend.length === 0 && bestMatches.length > 0) {
-          itemsToSend.push(...bestMatches.slice(0, 3).map(m => m.media));
-        }
-
-        // Fallback: get all media from product if still empty
-        if (itemsToSend.length === 0) {
-          let fallbackMedia = [];
-          if (directServiceMatch.productId) {
-            fallbackMedia = await mediaService.getAllMedia({
+        // Get all available media for this product
+        const allProductMedia = directServiceMatch.productId
+          ? await mediaService.getAllMedia({
               ownerUserId: ownerId,
               isActive: true,
               productId: directServiceMatch.productId
-            });
+            })
+          : await mediaService.getAllMedia({ ownerUserId: ownerId, isActive: true });
+
+        let itemsToSend = [];
+        let shouldAskPreference = false;
+
+        // If we have keyword matches, use them
+        if (bestMatches.length > 0) {
+          // Get top scored items
+          const topScore = bestMatches[0].matchCount;
+          const topMatches = bestMatches.filter(m => m.matchCount === topScore);
+
+          if (allProductMedia.length <= 2) {
+            // Only 1-2 total items - send all without asking
+            itemsToSend = allProductMedia.slice(0, 3);
+            logger.debug(`Only ${allProductMedia.length} items total, sending all`);
+          } else if (topMatches.length === 1 && topScore >= 3) {
+            // One clear winner with good score - send just that one
+            itemsToSend = [topMatches[0].media];
+            logger.debug(`One clear match: ${topMatches[0].media.title} (score: ${topScore})`);
+          } else if (topMatches.length <= 2) {
+            // Top items have same score and there are only 1-2 of them - send without asking
+            itemsToSend = topMatches.map(m => m.media);
+            logger.debug(`Sending ${topMatches.length} top matches with same score`);
+          } else {
+            // Multiple items with same score - send top 3 and ask preference
+            itemsToSend = bestMatches.slice(0, 3).map(m => m.media);
+            shouldAskPreference = true;
+            logger.debug(`Multiple matches with similar scores, will ask preference`);
           }
-          itemsToSend.push(...fallbackMedia.slice(0, 3));
+        }
+
+        // If no matches, send featured items or recent
+        if (itemsToSend.length === 0) {
+          const featured = allProductMedia.filter(m => m.featured);
+          if (featured.length > 0) {
+            itemsToSend = featured.slice(0, 3);
+          } else {
+            itemsToSend = allProductMedia.slice(0, 3);
+          }
+          logger.debug(`No keyword matches, sending ${itemsToSend.length} featured/recent items`);
         }
 
         for (const media of itemsToSend) {
@@ -653,8 +678,8 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             await event.message.reply({ message: directServiceMatch.description });
           }
           await messageService.saveMessage(user.id, 'assistant', directServiceMatch.description);
-        } else if (itemsToSend.length > 0) {
-          // Generate follow-up message
+        } else if (itemsToSend.length > 0 && shouldAskPreference && allProductMedia.length > 2) {
+          // Only ask for preference if there are more items to show
           await sleep(500);
           const askMessage = await servicesMenu.generateMediaFollowUpMessage(botConfig, itemsToSend.length, ownerId);
           if (entity) {
@@ -663,6 +688,16 @@ const processMessage = async (telegramId, text, client, event, ownerId, userData
             await event.message.reply({ message: askMessage });
           }
           await messageService.saveMessage(user.id, 'assistant', askMessage);
+        } else if (itemsToSend.length > 0) {
+          // Send a simple confirmation instead of asking for preference
+          await sleep(500);
+          const confirmMessage = await servicesMenu.generateServiceConfirmationMessage(directServiceMatch, botConfig, ownerId);
+          if (entity) {
+            await client.sendMessage(entity, { message: confirmMessage });
+          } else {
+            await event.message.reply({ message: confirmMessage });
+          }
+          await messageService.saveMessage(user.id, 'assistant', confirmMessage);
         }
 
         logger.info(`Direct product content sent to ${telegramId}: ${directServiceMatch.name} (${itemsToSend.length} media items)`);
